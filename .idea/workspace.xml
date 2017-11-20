@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="8baa3c2f-5a96-4d10-b989-b13cef51399d" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/legacy/runservers.sh" afterPath="$PROJECT_DIR$/legacy/runservers.sh" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/legacy/server1.py" afterPath="$PROJECT_DIR$/legacy/server1.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -24,8 +23,8 @@
           <file leaf-file-name="server1.py" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/legacy/server1.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="268">
-                  <caret line="445" column="24" lean-forward="true" selection-start-line="445" selection-start-column="24" selection-end-line="445" selection-end-column="24" />
+                <state relative-caret-position="223">
+                  <caret line="442" column="0" lean-forward="true" selection-start-line="442" selection-start-column="0" selection-end-line="442" selection-end-column="0" />
                   <folding>
                     <element signature="e#0#90#1" expanded="false" />
                     <element signature="e#1521#2073#0" expanded="false" />
@@ -75,12 +74,12 @@
                     <element signature="e#13060#13440#0" expanded="false" />
                     <element signature="e#13104#13222#0" expanded="false" />
                     <element signature="e#13484#13539#0" expanded="false" />
-                    <element signature="e#14639#14849#0" expanded="false" />
-                    <element signature="e#14991#15082#0" expanded="false" />
-                    <element signature="e#15165#15546#0" expanded="false" />
-                    <element signature="e#15201#15414#0" expanded="false" />
-                    <element signature="e#15582#15633#0" expanded="false" />
-                    <element signature="e#16175#16206#0" expanded="false" />
+                    <element signature="e#14640#14850#0" expanded="false" />
+                    <element signature="e#14992#15083#0" expanded="false" />
+                    <element signature="e#15166#15547#0" expanded="false" />
+                    <element signature="e#15202#15415#0" expanded="false" />
+                    <element signature="e#15583#15634#0" expanded="false" />
+                    <element signature="e#16176#16207#0" expanded="false" />
                   </folding>
                 </state>
               </provider>
@@ -383,7 +382,14 @@
       <option name="project" value="LOCAL" />
       <updated>1511129742016</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="fixed remove and unicode bug with json input. add/remove now work globally on all items in the view">
+      <created>1511142320550</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1511142320550</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -443,7 +449,8 @@
     <MESSAGE value="Paramaterized startup with docker variable to enable different build configurations with a single flag: docker = ' value ' line 107&#10;see example for how to invoke the flask server with multiple servers" />
     <MESSAGE value="set to load static server. network wide update_view in progress implmeneted mainly in routes update_view, secondary_update and in function Node.update_view()" />
     <MESSAGE value="primary update view and secondary update view are working for harcoded port localhost:5001 from localhost:5000" />
-    <option name="LAST_COMMIT_MESSAGE" value="primary update view and secondary update view are working for harcoded port localhost:5001 from localhost:5000" />
+    <MESSAGE value="fixed remove and unicode bug with json input. add/remove now work globally on all items in the view" />
+    <option name="LAST_COMMIT_MESSAGE" value="fixed remove and unicode bug with json input. add/remove now work globally on all items in the view" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -751,12 +758,12 @@
             <element signature="e#13060#13440#0" expanded="false" />
             <element signature="e#13104#13222#0" expanded="false" />
             <element signature="e#13484#13539#0" expanded="false" />
-            <element signature="e#14639#14849#0" expanded="false" />
-            <element signature="e#14991#15082#0" expanded="false" />
-            <element signature="e#15165#15546#0" expanded="false" />
-            <element signature="e#15201#15414#0" expanded="false" />
-            <element signature="e#15582#15633#0" expanded="false" />
-            <element signature="e#16175#16206#0" expanded="false" />
+            <element signature="e#14640#14850#0" expanded="false" />
+            <element signature="e#14992#15083#0" expanded="false" />
+            <element signature="e#15166#15547#0" expanded="false" />
+            <element signature="e#15202#15415#0" expanded="false" />
+            <element signature="e#15583#15634#0" expanded="false" />
+            <element signature="e#16176#16207#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -819,8 +826,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/legacy/server1.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="268">
-          <caret line="445" column="24" lean-forward="true" selection-start-line="445" selection-start-column="24" selection-end-line="445" selection-end-column="24" />
+        <state relative-caret-position="223">
+          <caret line="442" column="0" lean-forward="true" selection-start-line="442" selection-start-column="0" selection-end-line="442" selection-end-column="0" />
           <folding>
             <element signature="e#0#90#1" expanded="false" />
             <element signature="e#1521#2073#0" expanded="false" />
@@ -870,12 +877,12 @@
             <element signature="e#13060#13440#0" expanded="false" />
             <element signature="e#13104#13222#0" expanded="false" />
             <element signature="e#13484#13539#0" expanded="false" />
-            <element signature="e#14639#14849#0" expanded="false" />
-            <element signature="e#14991#15082#0" expanded="false" />
-            <element signature="e#15165#15546#0" expanded="false" />
-            <element signature="e#15201#15414#0" expanded="false" />
-            <element signature="e#15582#15633#0" expanded="false" />
-            <element signature="e#16175#16206#0" expanded="false" />
+            <element signature="e#14640#14850#0" expanded="false" />
+            <element signature="e#14992#15083#0" expanded="false" />
+            <element signature="e#15166#15547#0" expanded="false" />
+            <element signature="e#15202#15415#0" expanded="false" />
+            <element signature="e#15583#15634#0" expanded="false" />
+            <element signature="e#16176#16207#0" expanded="false" />
           </folding>
         </state>
       </provider>
