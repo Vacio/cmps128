@@ -2,10 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="8baa3c2f-5a96-4d10-b989-b13cef51399d" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/legacy/gossip_test.sh" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/legacy/server1.py" afterPath="$PROJECT_DIR$/legacy/server1.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/legacy/update_test.sh" afterPath="$PROJECT_DIR$/legacy/update_test.sh" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -34,7 +32,7 @@
             <entry file="file://$PROJECT_DIR$/legacy/server1.py">
               <provider selected="true" editor-type-id="text-editor">
                 <state relative-caret-position="240">
-                  <caret line="534" column="21" lean-forward="false" selection-start-line="534" selection-start-column="21" selection-end-line="534" selection-end-column="21" />
+                  <caret line="534" column="6" lean-forward="false" selection-start-line="534" selection-start-column="6" selection-end-line="534" selection-end-column="6" />
                   <folding>
                     <element signature="e#0#90#1" expanded="false" />
                     <element signature="e#92#102#0" expanded="true" />
@@ -425,7 +423,14 @@
       <option name="project" value="LOCAL" />
       <updated>1511142588283</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="testing gossip with get to test_gossip">
+      <created>1511163906709</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1511163906709</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -486,7 +491,8 @@
     <MESSAGE value="set to load static server. network wide update_view in progress implmeneted mainly in routes update_view, secondary_update and in function Node.update_view()" />
     <MESSAGE value="primary update view and secondary update view are working for harcoded port localhost:5001 from localhost:5000" />
     <MESSAGE value="fixed remove and unicode bug with json input. add/remove now work globally on all items in the view" />
-    <option name="LAST_COMMIT_MESSAGE" value="fixed remove and unicode bug with json input. add/remove now work globally on all items in the view" />
+    <MESSAGE value="testing gossip with get to test_gossip" />
+    <option name="LAST_COMMIT_MESSAGE" value="testing gossip with get to test_gossip" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -863,7 +869,7 @@
     <entry file="file://$PROJECT_DIR$/legacy/server1.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="240">
-          <caret line="534" column="21" lean-forward="false" selection-start-line="534" selection-start-column="21" selection-end-line="534" selection-end-column="21" />
+          <caret line="534" column="6" lean-forward="false" selection-start-line="534" selection-start-column="6" selection-end-line="534" selection-end-column="6" />
           <folding>
             <element signature="e#0#90#1" expanded="false" />
             <element signature="e#92#102#0" expanded="true" />

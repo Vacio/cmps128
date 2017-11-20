@@ -532,7 +532,7 @@ def gossip():
     #print("----->",newDict)
     print("Merging Dictionaries:")
     newDict = merge(KVSDict, inc_dict)
-    KVSDict = newDict
+    # KVSDict = newDict
     print("Result of merging dictionaries")
     print(newDict)
     json_resp = json.dumps({
