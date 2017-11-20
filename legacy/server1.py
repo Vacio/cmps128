@@ -4,7 +4,6 @@
 """
 
 import sys
-
 import requests
 from flask import Flask
 from flask import abort
@@ -21,35 +20,33 @@ import re
 import time
 from datetime import datetime
 global this_server
-
+from random import *
 global KVSDict
 KVSDict = dict()
 
 app = Flask(__name__)
+
 
 def gossip():
     try:
         # print ("Gossiping: ", KVSDict)
         # we want to send the dictionary over the network to another server
         # the other server will compare the dictionary
-
-
-        '''
-        print("\n===============SENDING GOSSIP==============")
-        print("\n\nsending request to http://" + node)
-        r = requests.put('http://' + node + '/secondary_update',
-                         json={
-                             'val': 'test',
-                             'result': 'it made it',
-                             'type': 'add',
-                             'dict': json.dumps(KVSDict),
-                         },
-                         headers={'content-type': 'application/json'},
-                         timeout=1,
-                         )
-        print(r + "\n")
-
-        '''
+        #node = this_server.get_gossip_node()
+        #print("Gossip Target:  "+ node+ "\n")
+        # print("\n===============SENDING GOSSIP==============")
+        # print("\n\nsending request to http://" + node)
+        # r = requests.put('http://' + node + '/secondary_update',
+        #                  json={
+        #                      'val': 'test',
+        #                      'result': 'it made it',
+        #                      'type': 'add',
+        #                      'dict': json.dumps(KVSDict),
+        #                  },
+        #                  headers={'content-type': 'application/json'},
+        #                  timeout=1,
+        #                  )
+        # print(r + "\n")
 
 
         return
@@ -180,6 +177,7 @@ class Node(object):
     def update_view(self):
         node_test = 'localhost:5001'
         for node in self.view_node_list:
+            #dont request yourself
             if node != self.my_ip_port:
                 try:
                     print("\n===============UPDATING VIEW==============")
@@ -209,6 +207,10 @@ class Node(object):
             if self.view_node_list.count(node) > 1:
                 self.view_node_list.remove(node)
         pass
+
+    def get_gossip_node(self):
+        number = randint(1, len(self.view_node_list))
+        return this_server.view_node_list[number - 1]
 
 
 # state object for this node
@@ -504,24 +506,68 @@ def server_name():
         logging.error(e)
         abort(400, message=str(e))
 
+def convert_keys_to_string(dictionary):
+    """Recursively converts dictionary keys to strings."""
+    if not isinstance(dictionary, dict):
+        return dictionary
+    return dict((str(k), convert_keys_to_string(v))
+        for k, v in dictionary.items())
+
+
 @app.route('/gossip', methods=['PUT'])
 def gossip():
 
-    print("+++++++ RECIEVING GOSSIP++++++++")
-    DictA = ast.literal_eval(request.form['dict'])
-    newDict = dict()
-    newDict = merge(KVSDict, DictA)
-    print("----->",newDict)
+    print("\n\n+++++++ RECIEVING GOSSIP++++++++ \n\n")
+    #DictA = ast.literal_eval(request.form['dict'])
+
+    inc_dict = json.loads(request.json['dict'])
+    print("Incoming dictionary:")
+    print(str(type(inc_dict)))
+    # print("\n")
+    # KVSDict = convert_keys_to_string(KVSDict)
+    # print("Current Dictionary:")
+    # print(KVSDict)
+    # print("\n")
+    DictA = request.json['dict']
+    #print("----->",newDict)
+    print("Merging Dictionaries:")
+    newDict = merge(KVSDict, inc_dict)
+    KVSDict = newDict
+    print("Result of merging dictionaries")
+    print(newDict)
     json_resp = json.dumps({
         "msg": "success",
-        "dict": newDict,
-        "kvsdict": KVSDict,
+        #"dict": newDict,
+        #"kvsdict": KVSDict,
     })
     return Response(
         json_resp,
         status=200,
         mimetype='application/json'
     )
+@app.route('/test_gossip', methods=['GET'])
+def test_gossip():
+    #send a test gossip to another servers gossip route
+    node = 'localhost:5001'
+    #r = requests.put('http://'+node+'/gossip',
+    r = requests.put('http://' + node + '/gossip',
+                     json={
+                         'val': 'test',
+                         'dict': json.dumps(KVSDict),
+                     },
+                     headers={'content-type': 'application/json'},
+                     timeout=1,
+                     )
+    #print(r)
+    json_resp = json.dumps({
+        'dict': 'placeholder',
+    })
+    return Response(
+        json_resp,
+        status=200,
+        mimetype='application/json',
+    )
+
 
 @app.route('/print_kvs', methods=['GET'])
 def print_kvs():
