@@ -516,7 +516,7 @@ def convert_keys_to_string(dictionary):
 
 @app.route('/gossip', methods=['PUT'])
 def gossip():
-
+    global KVSDict
     print("\n\n+++++++ RECIEVING GOSSIP++++++++ \n\n")
     #DictA = ast.literal_eval(request.form['dict'])
 
@@ -532,7 +532,7 @@ def gossip():
     #print("----->",newDict)
     print("Merging Dictionaries:")
     newDict = merge(KVSDict, inc_dict)
-    # KVSDict = newDict
+    KVSDict = newDict
     print("Result of merging dictionaries")
     print(newDict)
     json_resp = json.dumps({
