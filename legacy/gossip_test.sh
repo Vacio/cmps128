@@ -12,7 +12,7 @@ curl -X PUT localhost:5000/kv-store/key3 -d val="shld win"
 curl -X PUT localhost:5000/kv-store/key1 -d val="shld win"
 curl -X PUT localhost:5001/kv-store/key3 -d val="not final"
 curl -X PUT localhost:5001/kv-store/key1 -d val="vc 1"
-
+curl -X
 #timestamp tests
 
 #merge em
