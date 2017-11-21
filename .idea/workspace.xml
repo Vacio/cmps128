@@ -4,7 +4,6 @@
     <list default="true" id="8baa3c2f-5a96-4d10-b989-b13cef51399d" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/legacy/gossip_test.sh" afterPath="$PROJECT_DIR$/legacy/gossip_test.sh" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/legacy/server1.py" afterPath="$PROJECT_DIR$/legacy/server1.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -32,8 +31,8 @@
           <file leaf-file-name="server1.py" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/legacy/server1.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="492">
-                  <caret line="569" column="17" lean-forward="false" selection-start-line="569" selection-start-column="17" selection-end-line="569" selection-end-column="17" />
+                <state relative-caret-position="676">
+                  <caret line="571" column="23" lean-forward="true" selection-start-line="571" selection-start-column="23" selection-end-line="571" selection-end-column="23" />
                   <folding>
                     <element signature="e#0#90#1" expanded="false" />
                     <element signature="e#92#102#0" expanded="true" />
@@ -130,7 +129,7 @@
             <entry file="file://$PROJECT_DIR$/legacy/gossip_test.sh">
               <provider selected="true" editor-type-id="text-editor">
                 <state relative-caret-position="210">
-                  <caret line="14" column="7" lean-forward="false" selection-start-line="14" selection-start-column="7" selection-end-line="14" selection-end-column="7" />
+                  <caret line="14" column="0" lean-forward="false" selection-start-line="14" selection-start-column="0" selection-end-line="14" selection-end-column="37" />
                   <folding />
                 </state>
               </provider>
@@ -206,8 +205,8 @@
         <option value="$PROJECT_DIR$/legacy/kvs-get-test.sh" />
         <option value="$PROJECT_DIR$/legacy/runservers.sh" />
         <option value="$PROJECT_DIR$/legacy/update_test.sh" />
-        <option value="$PROJECT_DIR$/legacy/gossip_test.sh" />
         <option value="$PROJECT_DIR$/legacy/server1.py" />
+        <option value="$PROJECT_DIR$/legacy/gossip_test.sh" />
       </list>
     </option>
   </component>
@@ -429,7 +428,14 @@
       <option name="project" value="LOCAL" />
       <updated>1511223972371</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="GOSSIP works from get request to gossip_test">
+      <created>1511237975465</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1511237975465</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -493,7 +499,8 @@
     <MESSAGE value="testing gossip with get to test_gossip" />
     <MESSAGE value="gossip working when called with get, need to schedule it" />
     <MESSAGE value="SWICHED TO WSGI server werkzeug errors, gossip working, need to workaround required return of response" />
-    <option name="LAST_COMMIT_MESSAGE" value="SWICHED TO WSGI server werkzeug errors, gossip working, need to workaround required return of response" />
+    <MESSAGE value="GOSSIP works from get request to gossip_test" />
+    <option name="LAST_COMMIT_MESSAGE" value="GOSSIP works from get request to gossip_test" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -846,18 +853,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/legacy/gossip_test.sh">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="210">
-          <caret line="14" column="7" lean-forward="false" selection-start-line="14" selection-start-column="7" selection-end-line="14" selection-end-column="7" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/legacy/server1.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="492">
-          <caret line="569" column="17" lean-forward="false" selection-start-line="569" selection-start-column="17" selection-end-line="569" selection-end-column="17" />
+        <state relative-caret-position="676">
+          <caret line="571" column="23" lean-forward="true" selection-start-line="571" selection-start-column="23" selection-end-line="571" selection-end-column="23" />
           <folding>
             <element signature="e#0#90#1" expanded="false" />
             <element signature="e#92#102#0" expanded="true" />
@@ -902,6 +901,14 @@
             <element signature="e#14645#14858#0" expanded="false" />
             <element signature="e#15026#15077#0" expanded="false" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/legacy/gossip_test.sh">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="210">
+          <caret line="14" column="0" lean-forward="false" selection-start-line="14" selection-start-column="0" selection-end-line="14" selection-end-column="37" />
+          <folding />
         </state>
       </provider>
     </entry>
