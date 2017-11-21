@@ -12,6 +12,10 @@ curl -X PUT localhost:5000/kv-store/key3 -d val="shld win"
 curl -X PUT localhost:5000/kv-store/key1 -d val="shld win"
 curl -X PUT localhost:5001/kv-store/key3 -d val="not final"
 curl -X PUT localhost:5001/kv-store/key1 -d val="vc 1"
+curl -X GET localhost:5000/print_kvs;
+curl -X GET localhost:5001/print_kvs;
+curl -X GET localhost:5002/print_kvs;
+curl -X GET localhost:5003/print_kvs;
 
 #timestamp tests
 
