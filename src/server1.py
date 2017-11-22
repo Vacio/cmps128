@@ -321,6 +321,8 @@ def put_in_kvs(key):
             json_resp = json.dumps(
                 {
                     'replaced': 'True',
+                    'result': 'success',
+                    'causal_payload': KVSDict[key]['clock'],
                     'msg': 'Value of existing key replaced'
                 }
             )
