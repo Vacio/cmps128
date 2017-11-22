@@ -286,7 +286,7 @@ def put_in_kvs(key):
         if len(request.form['val']) > 1000000:
             json_resp = json.dumps(
                 {
-                    'result': 'Error',
+                    'result': 'error',
                     'msg': 'Object too large'
                 }
             )
@@ -299,7 +299,7 @@ def put_in_kvs(key):
         if not re.compile('[A-Za-z0-9_]').findall(key):
             json_resp = json.dumps(
                 {
-                    'result': 'Error',
+                    'result': 'error',
                     'msg': 'Key not valid'
                 }
             )
@@ -347,7 +347,9 @@ def put_in_kvs(key):
             json_resp = json.dumps(
                 {
                     'replaced': 'False',
-                    'msg': 'New key created'
+                    'msg': 'New key created',
+                    'causal_payload': '0',
+                    'result': 'success'
                 }
             )
             # logging.debug("Value in dict: " + KVSDict[key])
@@ -374,7 +376,7 @@ def put_in_kvs(key):
                 logging.debug(key)
                 json_resp = json.dumps(
                     {
-                        'result': 'Success',
+                        'result': 'success',
                         'value': KVSDict[key]['val'],
                         'node_id': str(this_server.my_identity()),
                         'causal_payload': KVSDict[key]['clock'],
@@ -390,7 +392,7 @@ def put_in_kvs(key):
             else:
                 json_resp = json.dumps(
                     {
-                        'result': 'Error',
+                        'result': 'error',
                         'msg': 'Key does not exist'
                     }
                 )
@@ -460,7 +462,7 @@ def server_name():
     try:
         json_resp = json.dumps(
             {
-                'result': 'Success',
+                'result': 'success',
                 'value': 'Server1',
                 'ip:port': this_server.my_ip + ':' + this_server.my_port,
                 'View': this_server.view_node_list
@@ -519,7 +521,7 @@ def sendGossip():
 
 
 sched = BackgroundScheduler(daemon=True)
-sched.add_job(sendGossip,'interval',seconds=1,id=this_server.my_ip_port)
+sched.add_job(sendGossip,'interval',seconds=.1,id=this_server.my_ip_port)
 sched.start()
 
 def merge(dict1, dict2):
