@@ -497,13 +497,12 @@ def sendGossip():
             return
         else:
             return
-    except Exception as e:
-        logging.error(e)
-        abort(400, message=str(e))
+    except:
+        pass
 
 
 sched = BackgroundScheduler(daemon=True)
-sched.add_job(sendGossip,'interval',seconds=.1)
+sched.add_job(sendGossip,'interval',seconds=.1,id=this_server.my_ip_port)
 sched.start()
 
 def merge(dict1, dict2):
