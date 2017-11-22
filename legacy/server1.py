@@ -113,10 +113,10 @@ class Node(object):
         return self.my_ip_port
 
 
-    def update_view(self):
+    def update_view(self,temp):
         node_test = 'localhost:5001'
         idx = 0
-        for node in self.view_node_list:
+        for node in temp:
             isReplica = idx < this_server.k
             idx = idx + 1
             #dont request yourself
@@ -164,25 +164,27 @@ this_server = Node(sys.argv)
 # for recieving updates from a node that recieved the initial update
 @app.route('/secondary_update', methods=['PUT'])
 def secondary_update():
-    print("\nSERVER: "+ this_server.my_ip_port+ "  reporting secondary update view")
     # turn it into a list of strings
-    new_view = map(str,request.json['view'])
+    new_view = request.json['view']
     #print("\n" + str(type(new_view)) + "\n")
     # sanitize any duplicates
-    this_server.view_node_list = new_view
-    this_server.remove_dups()
-    print("server @" + this_server.my_ip_port+ " NEW VIEW IS: \n"+str(this_server.view_node_list))
-    json_resp = json.dumps({
-        "msg": "success",
-        "node_id": this_server.my_identity(),
-        "number_of_nodes": len(this_server.view_node_list),
-        "all servers": this_server.view_node_list
-    })
-    return Response(
-        json_resp,
-        status=200,
-        mimetype='application/json'
-    )
+    if this_server.my_ip_port not in new_view:
+        this_server.view_node_list = []
+    else:
+        this_server.view_node_list = new_view
+        this_server.remove_dups()
+        print("server @" + this_server.my_ip_port+ " NEW VIEW IS: \n"+str(this_server.view_node_list))
+        json_resp = json.dumps({
+            "msg": "success",
+            "node_id": this_server.my_identity(),
+            "number_of_nodes": len(this_server.view_node_list),
+            "all servers": this_server.view_node_list
+        })
+        return Response(
+            json_resp,
+            status=200,
+            mimetype='application/json'
+        )
 
 
 def shutdown_server():
@@ -399,7 +401,7 @@ def update_view():
         # update the view list with a new server identity
         this_server.view_node_list.append(str(request.form['ip_port']))
         print('appended'+request.form['ip_port'])
-        this_server.update_view()
+        this_server.update_view(this_server.view_node_list)
         this_server.remove_dups()
         json_resp = json.dumps({
             "msg": "success",
@@ -414,9 +416,10 @@ def update_view():
             mimetype='application/json'
         )
     elif request.form['type'] == 'remove':
+        temp = [ip for ip in this_server.view_node_list]
         this_server.view_node_list.remove(request.form['ip_port'])
         print(this_server.my_ip_port + ': REMOVED'+request.form['ip_port'])
-        this_server.update_view()
+        this_server.update_view(temp)
         this_server.remove_dups()
         json_resp = json.dumps({
             "msg": "success",
@@ -482,21 +485,25 @@ def gossip():
 
 def sendGossip():
     try:
-        num = randint(0,len(this_server.view_node_list)-1)
-        ip = this_server.view_node_list[num]
-        r = requests.put('http://'+ip+'/gossip', data=json.dumps(KVSDict))
-        print(r.text)
-        # r = requests.put("http://localhost:8081/gossip", data=json.dumps(KVSDict))
-        # print(r.text)
-        # print("gossiping")
-        return
+        if(len(this_server.view_node_list) > 1):
+            print("Type of view node list ----->", type(this_server.view_node_list))
+            num = randint(0,len(this_server.view_node_list)-1)
+            ip = this_server.view_node_list[num]
+            r = requests.put('http://'+ip+'/gossip', data=json.dumps(KVSDict))
+            # print(r.text)
+            # r = requests.put("http://localhost:8081/gossip", data=json.dumps(KVSDict))
+            # print(r.text)
+            # print("gossiping")
+            return
+        else:
+            return
     except Exception as e:
         logging.error(e)
         abort(400, message=str(e))
 
 
 sched = BackgroundScheduler(daemon=True)
-sched.add_job(sendGossip,'interval',seconds=3)
+sched.add_job(sendGossip,'interval',seconds=.1)
 sched.start()
 
 def merge(dict1, dict2):
