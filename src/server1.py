@@ -15,6 +15,9 @@ import os
 import json
 import ast
 import logging
+import requests
+
+
 from ast import literal_eval
 from time import sleep
 import re
@@ -23,80 +26,13 @@ from datetime import datetime
 global this_server
 from random import *
 global KVSDict
+import logging
+logging.basicConfig()
 KVSDict = dict()
+
 
 app = Flask(__name__)
 
-
-def gossip():
-    try:
-        # print ("Gossiping: ", KVSDict)
-        # we want to send the dictionary over the network to another server
-        # the other server will compare the dictionary
-        #node = this_server.get_gossip_node()
-        #print("Gossip Target:  "+ node+ "\n")
-        # print("\n===============SENDING GOSSIP==============")
-        # print("\n\nsending request to http://" + node)
-        # r = requests.put('http://' + node + '/secondary_update',
-        #                  json={
-        #                      'val': 'test',
-        #                      'result': 'it made it',
-        #                      'type': 'add',
-        #                      'dict': json.dumps(KVSDict),
-        #                  },
-        #                  headers={'content-type': 'application/json'},
-        #                  timeout=1,
-        #                  )
-        # print(r + "\n")
-
-
-        return
-    except Exception as e:
-        logging.error(e)
-        abort(400, message=str(e))
-
-
-sched = BackgroundScheduler(daemon=True)
-sched.add_job(gossip,'interval',seconds=3)
-sched.start()
-
-# Dictionaries in the API
-def merge(dict1, dict2):
-    #print("merging", dict1, dict2 )
-
-    for key in dict1:
-        #print(key)
-        if key in dict2:
-            #print(dict1[key], dict[key])
-            winner = compare(dict1[key], dict2[key])
-            #print("setting winner in dict1")
-            dict1[key] = winner
-        else:
-            #print("in else")
-            dict2[key] = dict1[key]
-    for key in dict2:
-        if key in dict1:
-            winner = compare(dict1[key], dict2[key])
-            dict2[key] = winner
-        else:
-            dict1[key] = dict2[key]
-    return dict1
-
-def compare(key1, key2):
-    clock1 = int(key1['clock'])
-    clock2 = int(key2['clock'])
-    #print("comparing  c1 c2", clock1, clock2)
-    if clock1 > clock2:
-        return key1
-    elif clock1 < clock2:
-        return key2
-    elif clock1 == clock2:
-        # tie break timestamps
-        if key1['timestamp'] > key2['timestamp']:
-            print("tie breaker", key1['timestamp'], key2['timestamp'])
-            return key1
-        else:
-            return key2
 
 
 # state object for this_server's identifying information
@@ -124,9 +60,9 @@ def compare(key1, key2):
         logging.debug("List of all IP:PORT values in the VIEW: " + str(viewList))
 """
 
-#docker = 'loading from docker env variables
-#docker = 'loading statically defined server'
 docker = 'loading from docker env variables'
+#docker = 'loading statically defined server'
+# docker = 'load state from command line'
 
 # Like this: $python server1.py 3 "localhost:5000, localhost:5001, localhost:5002" "localhost:5000"
 #  where 3 is the number of nodes and the string is the VIEW variable
@@ -142,6 +78,7 @@ class Node(object):
     replicas = []
     view_clock = 0
     absent_servers = []
+    k = 3
     def __init__(self, env_vars):
 
         if docker == 'loading statically defined server':
@@ -176,20 +113,25 @@ class Node(object):
         return self.my_ip_port
 
 
-    def update_view(self):
+    def update_view(self,temp):
         node_test = 'localhost:5001'
-        for node in self.view_node_list:
+        idx = 0
+        for node in temp:
+            isReplica = idx < this_server.k
+            idx = idx + 1
             #dont request yourself
             if node != self.my_ip_port:
                 try:
                     print("\n===============UPDATING VIEW==============")
                     print("\n\nsending request to http://"+ node + "\n")
+                    print("\nshould be a replica: ", isReplica)
                     r = requests.put('http://' + node + '/secondary_update',
                                     json={
                         'val':'test',
                         'result':'it made it',
                         'type':'add',
                         'view': this_server.view_node_list,
+                        'isReplica': isReplica
                     },
                                     headers={'content-type':'application/json'},
                                     timeout=1,
@@ -216,31 +158,33 @@ class Node(object):
 
 
 # state object for this node
-this_server = Node(sys.argv)
+this_server = Node('a')
 
 
 # for recieving updates from a node that recieved the initial update
 @app.route('/secondary_update', methods=['PUT'])
 def secondary_update():
-    print("\nSERVER: "+ this_server.my_ip_port+ "  reporting secondary update view")
     # turn it into a list of strings
-    new_view = map(str,request.json['view'])
+    new_view = request.json['view']
     #print("\n" + str(type(new_view)) + "\n")
     # sanitize any duplicates
-    this_server.view_node_list = new_view
-    this_server.remove_dups()
-    print("server @" + this_server.my_ip_port+ " NEW VIEW IS: \n"+str(this_server.view_node_list))
-    json_resp = json.dumps({
-        "msg": "success",
-        "node_id": this_server.my_identity(),
-        "number_of_nodes": len(this_server.view_node_list),
-        "all servers": this_server.view_node_list,
-    })
-    return Response(
-        json_resp,
-        status=200,
-        mimetype='application/json'
-    )
+    if this_server.my_ip_port not in new_view:
+        this_server.view_node_list = []
+    else:
+        this_server.view_node_list = new_view
+        this_server.remove_dups()
+        print("server @" + this_server.my_ip_port+ " NEW VIEW IS: \n"+str(this_server.view_node_list))
+        json_resp = json.dumps({
+            "msg": "success",
+            "node_id": this_server.my_identity(),
+            "number_of_nodes": len(this_server.view_node_list),
+            "all servers": this_server.view_node_list
+        })
+        return Response(
+            json_resp,
+            status=200,
+            mimetype='application/json'
+        )
 
 
 def shutdown_server():
@@ -457,7 +401,7 @@ def update_view():
         # update the view list with a new server identity
         this_server.view_node_list.append(str(request.form['ip_port']))
         print('appended'+request.form['ip_port'])
-        this_server.update_view()
+        this_server.update_view(this_server.view_node_list)
         this_server.remove_dups()
         json_resp = json.dumps({
             "msg": "success",
@@ -465,15 +409,17 @@ def update_view():
             "number_of_nodes": len(this_server.view_node_list),
             "all servers": this_server.view_node_list,
         })
+        print(this_server.view_node_list)
         return Response(
             json_resp,
             status=200,
             mimetype='application/json'
         )
     elif request.form['type'] == 'remove':
+        temp = [ip for ip in this_server.view_node_list]
         this_server.view_node_list.remove(request.form['ip_port'])
         print(this_server.my_ip_port + ': REMOVED'+request.form['ip_port'])
-        this_server.update_view()
+        this_server.update_view(temp)
         this_server.remove_dups()
         json_resp = json.dumps({
             "msg": "success",
@@ -514,82 +460,93 @@ def server_name():
 
 
 
+
+
+'''
+When someone does a put on the gossip route, the payload is an incoming dictionary
+The incoming dictionary is merged with the current dictionary and the result is
+returned to the caller
+'''
 @app.route('/gossip', methods=['PUT'])
 def gossip():
-    global KVSDict
-    #print("\n\n+++++++ RECIEVING GOSSIP++++++++ \n\n")
-    #DictA = ast.literal_eval(request.form['dict'])
-    inc_dict = json.loads(request.json['dict'])
-    #print(json.dumps(json.loads(request.json['dict'])))
-    DictA = ast.literal_eval(json.dumps(json.loads(request.json['dict'])))
-    #print("----->",DictA,"\n")
-    #Removes all unicode!!@#!@#%!%#%%#$%FINALLY
-    KVSDict = ast.literal_eval(json.dumps(KVSDict,ensure_ascii=True))
-    #print("clean KVSDICT: ", KVSDict,type(KVSDict))
-    #print("Merging Dictionaries:")
+    DictA = json.loads(request.data)
+    newDict = dict()
     newDict = merge(KVSDict, DictA)
-    KVSDict = newDict
-    #print(KVSDict)
-    json_resp = json.dumps({
 
-        "kvsdict": json.dumps(KVSDict),
+    json_resp = json.dumps({
+        "msg": "success",
+        "dict": KVSDict
     })
     return Response(
         json_resp,
         status=200,
         mimetype='application/json'
     )
-@app.route('/test_gossip', methods=['GET'])
-def test_gossip():
-    #send a test gossip to another servers gossip route
-    global KVSDict
-    #TODO Paramaterize node with nodelist
-    print(this_server.view_node_list)
-    for node_ip in this_server.view_node_list:
-        if node_ip != this_server.my_ip:
-            try:
-                sleep(.01)
-                print("start\n\n "+  node_ip + "\n\n end")
-                #r = requests.put('http://'+node+'/gossip',
-                r = requests.put('http://' + node_ip + '/gossip',
-                                 json={
-                                     'val': 'test',
-                                     'dict': json.dumps(KVSDict),
-                                 },
-                                 headers={'content-type': 'application/json'},
-                                 timeout=2,
-                                 )
 
-                print("+++++++++++ +++++++++")
-                ret_dict = ast.literal_eval(json.loads(r.content)['kvsdict'])
-                print(ret_dict,type(ret_dict)) #the new KVSDict
-                KVSDict = ret_dict
-                json_resp = json.dumps({
-                    'dict': 'placeholder',
-                })
-                return Response(
-                    json_resp,
-                    status=200,
-                    mimetype='application/json',
-                )
-            except:
-                print("Gossip from: "+this_server.my_ip_port+" failed to NODE: ",node_ip)
-                pass
+def sendGossip():
+    try:
+        if(len(this_server.view_node_list) > 1):
+            print("Type of view node list ----->", type(this_server.view_node_list))
+            num = randint(0,len(this_server.view_node_list)-1)
+            ip = this_server.view_node_list[num]
+            r = requests.put('http://'+ip+'/gossip', data=json.dumps(KVSDict))
+            # print(r.text)
+            # r = requests.put("http://localhost:8081/gossip", data=json.dumps(KVSDict))
+            # print(r.text)
+            # print("gossiping")
+            return
         else:
-            continue
-@app.route('/print_kvs', methods=['GET'])
-def print_kvs():
-    json_resp = json.dumps({
-        'dict':KVSDict,
-    })
-    return Response(
-        json_resp,
-        status=200,
-        mimetype='application/json',
-    )
+            return
+    except:
+        pass
+
+
+sched = BackgroundScheduler(daemon=True)
+sched.add_job(sendGossip,'interval',seconds=1,id=this_server.my_ip_port)
+sched.start()
+
+def merge(dict1, dict2):
+    #print("merging", dict1, dict2 )
+
+    for key in dict1:
+        #print(key)
+        if key in dict2:
+            #print(dict1[key], dict[key])
+            winner = compare(dict1[key], dict2[key])
+            #print("setting winner in dict1")
+            dict1[key] = winner
+        else:
+            #print("in else")
+            dict2[key] = dict1[key]
+    for key in dict2:
+        if key in dict1:
+            winner = compare(dict1[key], dict2[key])
+            dict2[key] = winner
+        else:
+            dict1[key] = dict2[key]
+    return dict1
+def compare(key1, key2):
+    clock1 = int(key1['clock'])
+    clock2 = int(key2['clock'])
+    #print("comparing  c1 c2", clock1, clock2)
+    if clock1 > clock2:
+        return key1
+    elif clock1 < clock2:
+        return key2
+    elif clock1 == clock2:
+        # tie break timestamps
+        if key1['timestamp'] > key2['timestamp']:
+            print("tie breaker", key1['timestamp'], key2['timestamp'])
+            return key1
+        else:
+            return key2
+
+
+
+
 
 if __name__ == '__main__':
     print(this_server.my_port)
-    server = WSGIServer(("0.0.0.0",int(this_server.my_port)), app)
+    server = WSGIServer((this_server.my_ip,int(this_server.my_port)), app)
     server.serve_forever()
-    #app.run(host=this_server.my_ip, port=this_server.my_port)
+    #app.run(host=this_server.my_ip, port=this_server.my_port, threaded=True)

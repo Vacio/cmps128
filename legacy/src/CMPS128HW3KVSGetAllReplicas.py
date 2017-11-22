@@ -3,21 +3,21 @@
     Created for UCSC undergrad course CMPS 128, Fall 2017
 """
 
-from flask_restful import Resource
-from flask_restful import abort
+
 from flask import Response
+from flask.views import MethodView
 
 import json
 import logging
 
-import CMPS128HW3Settings
+import globals
 
 """
     In this file, we will return the number of replicas that are currently available in the key-value store.
     :var nodesList: The global list of nodes from CMPS128HW3 to extrapolate data from
     :return: A HTTP response with the list of replicas
 """
-class CMPS128HW3KVSGetAllReplicas(Resource):
+class CMPS128HW3KVSGetAllReplicas(MethodView):
 
     # GET method to get the list of replicas
     def get(self):
@@ -56,7 +56,7 @@ class CMPS128HW3KVSGetAllReplicas(Resource):
         replicaList = []
 
         # iterate through the list and if a node is a replica, append the IP:Port value to the replicaList
-        for node in CMPS128HW3Settings.nodesList:
+        for node in globals.viewList:
             if node.get_role() == "replica":
                 replicaList.append(node.get_IPPort())
 

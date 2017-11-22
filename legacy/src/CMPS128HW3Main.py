@@ -6,11 +6,17 @@
 import logging
 import threading
 
+from CMPS128HW3KVSReplica import CMPS128HW3KVSReplica
+from CMPS128HW3KVSProxy import CMPS128HW3KVSProxy
 from CMPS128HW3KVSNodeDetails import CMPS128HW3KVSNodeDetails
 from CMPS128HW3KVSGetAllReplicas import CMPS128HW3KVSGetAllReplicas
 from CMPS128HW3KVSUpdateView import CMPS128HW3KVSUpdateView
 from CMPS128HW3Node import CMPS128HW3Node
-import CMPS128HW3Settings
+
+import globals
+
+from gevent.wsgi import WSGIServer
+
 # To prevent any errors, quick fix to patch the thread
 import gevent.monkey; gevent.monkey.patch_thread()
 
@@ -18,9 +24,6 @@ import sys
 sys.path.append('src/')
 
 import os
-
-from flask import Flask
-from flask_restful import Api
 
 """
     Assignment 3
@@ -33,33 +36,32 @@ from flask_restful import Api
 
     Global variables (as listed in the settings file)
     -----------------------------------------------------
+    :var app: The Flask app to be run (e.g., app.run(...))
+    :var api: The API to wire up different routes
+    :var numOfReplicas: The number of K replicas, as indicated by the environment variable
     :var localIPPort: The localIPPort for this specific instance in the form of IP:PORT (an identifier to query for objects)
-    :var VCDict: All IP:PORT values and their associated vector clock values mapped in a global dictionary
-    :var nodesList: All the IP:PORT values for all instances that exist in the KVS, as a list
-
-    Local variables
-    --------------------
-    :var localIP: The local IP for this specific instance, by itself
-    :var localPort: The local port for this specific instance, by itself
-    :var viewList: Temporary list of initial nodes to be stored in the global nodesList
-    :var numOfNodes: The number of total nodes/instances (or IP:PORT items) that exist in the KVS
-    :var numOfReplicas: The number of desired instances to be replicas, as specified by the client   
+    :var KVSDict: The key-value store, global to all 
+    :var viewList: The global view of all nodes
+    :var live_servers: All the live servers, or servers that are "up"
+    :var absent_servers: All the servers that are "down"
 """
 class CMPS128HW3Main:
 
     def __init__(self):
 
-        # Initialize the application with the appropriate route
-        app = Flask(__name__)
-        api = Api(app)
-
         # Environment variables
-        CMPS128HW3Settings.localIPPort = os.getenv('IPPORT')
-        logging.debug("Value of IP:PORT: " + str(CMPS128HW3Settings.localIPPort))
+        globals.localIPPort = os.getenv('IPPORT')
+        logging.debug("Value of IP:PORT: " + str(globals.localIPPort))
 
-        localIP = os.getenv('IPPORT').split(":")[0]
-        logging.debug("Value of local IP: " + str(localIP))
+        # Number of replicas determined by client
+        globals.numOfReplicas = int(os.getenv('K'))
+        logging.info("Number of replicas: " + str(globals.numOfReplicas))
 
+        # The initial VIEW list
+        initialView = os.getenv('VIEW').split(",")
+        logging.debug("List of all IP:PORT values in the VIEW: " + str(initialView))
+
+        # The local port for this instance
         localPort = os.getenv('IPPORT').split(":")[1]
         logging.debug("Value of local port: " + str(localPort))
 
@@ -67,37 +69,52 @@ class CMPS128HW3Main:
         numOfNodes = len(os.getenv('VIEW').split(","))
         logging.debug("Number of nodes: " + str(numOfNodes))
 
-        # Number of replicas determined by client
-        numOfReplicas = int(os.getenv('K'))
-        logging.info("Number of replicas: " + str(numOfReplicas))
-
-        # All the nodes stored in the initial "VIEW" list
-        viewList = os.getenv('VIEW').split(",")
-        logging.debug("List of all IP:PORT values in the VIEW: " + str(viewList))
 
         # Simple loop to assign IP:Port values to each of the nodes, and append the nodes to the global
         # nodesList
         for i in range(numOfNodes):
             # Declare a node "holder", pointing at a fresh node to be stored in the global replica list
             singleNode = CMPS128HW3Node()
-            # Iterating through the VIEW list, another "holder" variable for a specific "IP:PORT" value
-            singleIPPort = viewList[i]
-            # Set the IPPort and other values that are needed
-            singleNode.set_IPPort(singleIPPort)
+            # Set the IPPORT from the initialView list
+            singleNode.set_IPPort(initialView[i])
             # Append this node to the entire global list of nodes in the KVS
-            CMPS128HW3Settings.nodesList.append(singleNode)
+            globals.viewList.append(singleNode)
 
 
         # Pass the number of nodes and replicas to subroutine to determine replicas and proxies (if any)
-        self.delegate_replicas_and_proxies(numOfNodes, numOfReplicas)
+        self.delegate_replicas_and_proxies(numOfNodes, globals.numOfReplicas)
 
-        # Add the appropriate resources and run the application
-        # api.add_resource(CMPS128HW3KVSReplica, '/kv-store/<val>')
-        api.add_resource(CMPS128HW3KVSNodeDetails, '/kv-store/get_node_details')
-        api.add_resource(CMPS128HW3KVSGetAllReplicas, '/kv-store/get_all_replicas')
-        api.add_resource(CMPS128HW3KVSUpdateView, '/kv-store/update_view?type=<type>')
+        # Initiate the scheduler to gossip with other nodes
+        # sched = BackgroundScheduler(daemon=True)
+        # sched.add_job(gossip, 'interval', seconds=3)
+        # sched.start()
 
-        app.run(host='0.0.0.0', port=str(localPort))
+        # Add the appropriate views and run the application
+        globals.app.add_url_rule('/kv-store/get_node_details',
+                                 view_func=CMPS128HW3KVSNodeDetails.as_view('get_node_details'))
+        globals.app.add_url_rule('/kv-store/get_all_replicas',
+                                 view_func=CMPS128HW3KVSGetAllReplicas.as_view('get_all_replicas'))
+        globals.app.add_url_rule('/kv-store/update_view?type=<type>',
+                                 view_func=CMPS128HW3KVSUpdateView.as_view('update_view'))
+
+        # Looking for our node, iterate through the entire VIEW list and  if it is the node local to this instance,
+        # see if it is a replica or proxy and add the appropriate URL rule. We can then break out of the entire loop
+        # to spare us any more comparisons
+        for i in range(len(globals.viewList)):
+            singleNode = globals.viewList[i]
+            if singleNode.get_IPPort() == globals.localIPPort:
+                if singleNode.get_role() == "replica":
+                    globals.app.add_url_rule('/kv-store/<key>',
+                                             view_func=CMPS128HW3KVSReplica.as_view('kv-store-replica'))
+                    break
+                elif singleNode.get_role() == "proxy":
+                    globals.app.add_url_rule('/kv-store/<key>',
+                                             view_func=CMPS128HW3KVSProxy.as_view('kv-store-proxy'))
+                    break
+
+        globals.local_server = WSGIServer(("0.0.0.0", int(localPort)), globals.app)
+        logging.info("* Running on " + str(globals.localIPPort) + " (Press CTRL+C to quit)")
+        globals.local_server.serve_forever()
 
     """
         Should the number of nodes be greater than the number of replicas, we will assign roles to replicas
@@ -115,23 +132,24 @@ class CMPS128HW3Main:
             # For the entire list, print out each node value and then assign the first k nodes as replicas in a
             # dictionary. The upper bound here will be number of replicas.
             for i in range(numOfReplicas):
-                singleNode = CMPS128HW3Settings.nodesList[i]
+                singleNode = globals.viewList[i]
                 singleNode.set_replica()
                 logging.debug("Role of " + str(singleNode.get_IPPort()) + ": " + singleNode.get_role())
             # For the entire list, print out each node value and then assign the first [k+1]...[number of nodes] as
             # replicas in a dictionary. The upper bound here will be number of total nodes, and the lower bound will be
             # the number of replicas.
             for i in range(numOfReplicas, numOfNodes):
-                singleNode = CMPS128HW3Settings.nodesList[i]
+                singleNode = globals.viewList[i]
                 singleNode.set_proxy()
                 logging.debug("Role of " + str(singleNode.get_IPPort()) + ": " + singleNode.get_role())
         else:
             # For the entire list, print out each node value and then assign all the nodes as replicas in a
             # dictionary. The upper bound here will be number of total nodes.
             for i in range(numOfNodes):
-                singleNode = CMPS128HW3Settings.nodesList[i]
+                singleNode = globals.viewList[i]
                 singleNode.set_replica()
                 logging.debug("Role of " + str(singleNode.get_IPPort()) + ": " + singleNode.get_role())
+
 
 # Initiate a new thread for the method
 if __name__ == '__main__':
@@ -140,11 +158,10 @@ if __name__ == '__main__':
         logging.getLogger().setLevel(logging.DEBUG)
 
         # Initiate the threads
-        settings_thread = threading.Thread(target=CMPS128HW3Settings.CMPS128HW3Settings)
+        settings_thread = threading.Thread(target=globals.globals)
         settings_thread.start()
         main_thread = threading.Thread(target=CMPS128HW3Main)
         main_thread.start()
 
-
     except Exception as e:
-        logging.error(e)
+        logging.error(str(e))

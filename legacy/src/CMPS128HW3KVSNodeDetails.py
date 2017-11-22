@@ -2,16 +2,14 @@
     Author: Cristian Gonzales
     Created for UCSC undergrad course CMPS 128, Fall 2017
 """
-
-from flask_restful import Resource
-from flask_restful import abort
+from flask.views import MethodView
 from flask import Response
 
 import json
 
 import logging
 
-import CMPS128HW3Settings
+import globals
 
 """
     In this file, this is a resource that will check if this instance is a forwarding instance or a replica.
@@ -21,7 +19,7 @@ import CMPS128HW3Settings
         they are replicas, or they are proxies).
     :return: An HTTP response
 """
-class CMPS128HW3KVSNodeDetails(Resource):
+class CMPS128HW3KVSNodeDetails(MethodView):
 
     # Get method to see if current instance is a replica or not
     def get(self):
@@ -30,8 +28,8 @@ class CMPS128HW3KVSNodeDetails(Resource):
             # a node, and if it's role is replica, then return a JSON response that indicates that it is
             # a replica. If that node's role isn't a replica, then return a JSON response that indicates
             # that it isn't a replica.
-            for node in CMPS128HW3Settings.nodesList:
-                if str(node.get_IPPort()) == str(CMPS128HW3Settings.localIPPort):
+            for node in globals.viewList:
+                if str(node.get_IPPort()) == str(globals.localIPPort):
                     if str(node.get_role()) == "replica":
                         json_resp = json.dumps({
                             "result": "success",

@@ -3,72 +3,47 @@
     Created for UCSC undergrad course CMPS 128, Fall 2017
 """
 
-from flask_restful import Resource
-from flask_restful import abort
+from flask.views import MethodView
 from flask import request
 from flask import Response
-from datetime import datetime
-from time import sleep
-from apscheduler.schedulers.background import BackgroundScheduler
+
+import time
 import json
 import logging
 import re
-import threading
+
+import globals
+
 
 """
     Initialize an empty dictionary.
-    :var KVSDict: The global dictionary that will serve as our KVS
+    :var globals.KVSDict: The global dictionary that will serve as our KVS
 """
-global KVSDict
-KVSDict = dict()
-gossipTimer = 5;
-
-
-
-def gossip():
-    try:
-        print ("Gossiping")
-        
-    except Exception as e:
-        logging.error(e)
-        abort(400, message=str(e))
-        
-
-sched = BackgroundScheduler(daemon=True)
-sched.add_job(gossip,'interval',seconds=3)
-sched.start()
         
 """
     Class that implements the KVS. Refer to the README for specifications and functional guarantees.
 """
-# TODO: Clean up *all* logic in this class
-class CMPS128HW3KVSReplica(Resource):
-    
-
-
-            
-
+class CMPS128HW3KVSReplica(MethodView):
     """
        GET request
        :return: HTTP response
     """
-
-    
     def get(self, key):
         try:
             # If the requested argument is in the dictionary, then return a sucessful message with the last stored
             # value. If not, then return a 404 error message
-            logging.info("Value of key: " + str(KVSDict.get(key)))
-            print(type(KVSDict[key]))
+            logging.info("Value of key: " + str(globals.KVSDict.get(key)))
+            logging.info("Type: " + type(globals.KVSDict[key]))
 
-            if key in KVSDict:
+            if key in globals.KVSDict:
                 logging.debug(key)
-                # val = KVSDict[key]['val']
-                # print("val --->", val)
                 json_resp = json.dumps(
                     {
                         'result':'Success',
-                        'value': KVSDict[key]['val']
+                        'value': globals.KVSDict[key]['val'],
+                        'node_id': str(globals.localIPPort),
+                        'causal_payload': globals.KVSDict[key]['clock'],
+                        'timestamp': globals.KVSDict[key]['timestamp']
                     }
                 )
                 # Return the response
@@ -92,7 +67,18 @@ class CMPS128HW3KVSReplica(Resource):
                 )
         except Exception as e:
             logging.error(e)
-            abort(400, message=str(e))
+            json_resp = json.dumps(
+                {
+                    'result': 'Error',
+                    'msg': str(e)
+                }
+            )
+            # Return the response
+            return Response(
+                json_resp,
+                status=404,
+                mimetype='application/json'
+            )
 
     """
         PUT request
@@ -100,10 +86,8 @@ class CMPS128HW3KVSReplica(Resource):
     """
     def put(self, key):
         try:
-            
-            # self.gossip()
-            logging.debug(key)
 
+            logging.debug(key)
             # Conditional to check if the input value is nothing or if there are just no arguments
             if request.form['val'] == '' or len(request.form['val']) == None:
                 json_resp = json.dumps(
@@ -164,13 +148,13 @@ class CMPS128HW3KVSReplica(Resource):
 
             # If the value is in the dictionary, then replace the value of the existing key with a new value
             # Else, make a new key-val pair in the dict if the key does not exist
-            if key in KVSDict:
+            if key in globals.KVSDict:
                 # Replace the key-val pair in the dict with the new requested value
                 # Precondition: the key must already exist in the dict
                 logging.debug(request.form['val'])
-                KVSDict[key]['val'] = request.form['val']
-                KVSDict[key]['clock'] = KVSDict[key]['clock'] + 1
-                KVSDict[key]['timestamp'] = str(datetime.now())
+                globals.KVSDict[key]['val'] = request.form['val']
+                globals.KVSDict[key]['clock'] = globals.KVSDict[key]['clock'] + 1
+                globals.KVSDict[key]['timestamp'] = str(time.time())
                 json_resp = json.dumps(
                     {
                         'replaced': 'True',
@@ -183,37 +167,40 @@ class CMPS128HW3KVSReplica(Resource):
                     status=200,
                     mimetype='application/json'
                 )
-            elif key not in KVSDict:
+            elif key not in globals.KVSDict:
                 logging.debug(request.form['val'])
                 # Add the key-val pair to the dictionary
-                KVSDict["123"] = {'val': 456}
-                print("CHECK THIS OUT ", KVSDict["123"]['val'])
                 newVal = {
                     'val': request.form['val'],
                     'clock': 0,
-                    'timestamp': str(datetime.now())
+                    'timestamp': str(time.time())
                 }
-
-                KVSDict[key] = newVal
-
-                #KVSDict[key] = request.form['val'] old way
-
-
+                globals.KVSDict[key] = newVal
+                # globals.KVSDict[key] = request.form['val']
                 json_resp = json.dumps(
                     {
                         'replaced': 'False',
                         'msg': 'New key created'
                     }
                 )
-                #logging.debug("Value in dict: " + KVSDict[key])
+                #logging.debug("Value in dict: " + globals.KVSDict[key])
                 # Return the response
                 return Response(
                     json_resp,
                     status=201,
                     mimetype='application/json'
                 )
-
         except Exception as e:
             logging.error(e)
-            abort(400, message=str(e))
-            
+            json_resp = json.dumps(
+                {
+                    'result': 'Error',
+                    'msg': str(e)
+                }
+            )
+            # Return the response
+            return Response(
+                json_resp,
+                status=404,
+                mimetype='application/json'
+            )
