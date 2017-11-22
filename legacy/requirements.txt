@@ -1,5 +1,5 @@
 Flask>=0.1
+flask-restful>=0.3
 gevent>=1.2
 jsonify>=0.5
 requests>=2.1
-apscheduler>=3.0

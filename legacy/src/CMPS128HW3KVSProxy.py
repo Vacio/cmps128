@@ -3,7 +3,7 @@
     Created for UCSC undergrad course CMPS 128, Fall 2017
 """
 
-from flask_restful import Resource
+from flask.views import MethodView
 from flask import Response
 from flask import request
 
@@ -19,7 +19,7 @@ import os
     Class that will redirect to the KVS. Refer to the README for specifications and functional guarantees.
 """
 # TODO: Clean up this *entire* class/logic
-class CMPS128HW3KVSProxy(Resource):
+class CMPS128HW3KVSProxy(MethodView):
     """
         MAINIP initialization
     """

@@ -5,9 +5,6 @@
 
 import logging
 
-import CMPS128HW3Settings
-
-
 """
     Node object with class variables as identifiers for what the node is.
     :var IPPort: The IP:Port value for the associated Node
@@ -35,7 +32,6 @@ class CMPS128HW3Node:
         self.IPPort = None
         self.status = "up"
         self.role = None
-        self.VC_value = 0
 
     """
         Set the IP:Port value as a string

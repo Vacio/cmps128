@@ -9,4 +9,4 @@ COPY . .
 
 EXPOSE 8080
 
-CMD [ "python", "src/CMPS128HW3Main.py" ]
+CMD [ "python", "src/server1.py" ]
