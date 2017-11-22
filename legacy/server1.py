@@ -33,56 +33,6 @@ KVSDict = dict()
 
 app = Flask(__name__)
 
-def sendGossip():
-    try:
-        r = requests.put("http://localhost:8081/gossip", data=json.dumps(KVSDict))
-        print(r.text)
-        # print("gossiping")
-        return
-    except Exception as e:
-        logging.error(e)
-        abort(400, message=str(e))
-
-
-sched = BackgroundScheduler(daemon=True)
-sched.add_job(sendGossip,'interval',seconds=3)
-sched.start()
-
-def merge(dict1, dict2):
-    #print("merging", dict1, dict2 )
-
-    for key in dict1:
-        #print(key)
-        if key in dict2:
-            #print(dict1[key], dict[key])
-            winner = compare(dict1[key], dict2[key])
-            #print("setting winner in dict1")
-            dict1[key] = winner
-        else:
-            #print("in else")
-            dict2[key] = dict1[key]
-    for key in dict2:
-        if key in dict1:
-            winner = compare(dict1[key], dict2[key])
-            dict2[key] = winner
-        else:
-            dict1[key] = dict2[key]
-    return dict1
-def compare(key1, key2):
-    clock1 = int(key1['clock'])
-    clock2 = int(key2['clock'])
-    #print("comparing  c1 c2", clock1, clock2)
-    if clock1 > clock2:
-        return key1
-    elif clock1 < clock2:
-        return key2
-    elif clock1 == clock2:
-        # tie break timestamps
-        if key1['timestamp'] > key2['timestamp']:
-            print("tie breaker", key1['timestamp'], key2['timestamp'])
-            return key1
-        else:
-            return key2
 
 
 # state object for this_server's identifying information
@@ -128,6 +78,7 @@ class Node(object):
     replicas = []
     view_clock = 0
     absent_servers = []
+    k = 3
     def __init__(self, env_vars):
 
         if docker == 'loading statically defined server':
@@ -164,18 +115,23 @@ class Node(object):
 
     def update_view(self):
         node_test = 'localhost:5001'
+        idx = 0
         for node in self.view_node_list:
+            isReplica = idx < this_server.k
+            idx = idx + 1
             #dont request yourself
             if node != self.my_ip_port:
                 try:
                     print("\n===============UPDATING VIEW==============")
                     print("\n\nsending request to http://"+ node + "\n")
+                    print("\nshould be a replica: ", isReplica)
                     r = requests.put('http://' + node + '/secondary_update',
                                     json={
                         'val':'test',
                         'result':'it made it',
                         'type':'add',
                         'view': this_server.view_node_list,
+                        'isReplica': isReplica
                     },
                                     headers={'content-type':'application/json'},
                                     timeout=1,
@@ -220,7 +176,7 @@ def secondary_update():
         "msg": "success",
         "node_id": this_server.my_identity(),
         "number_of_nodes": len(this_server.view_node_list),
-        "all servers": this_server.view_node_list,
+        "all servers": this_server.view_node_list
     })
     return Response(
         json_resp,
@@ -523,6 +479,58 @@ def gossip():
         status=200,
         mimetype='application/json'
     )
+
+def sendGossip():
+    try:
+        r = requests.put("http://localhost:8081/gossip", data=json.dumps(KVSDict))
+        print(r.text)
+        # print("gossiping")
+        return
+    except Exception as e:
+        logging.error(e)
+        abort(400, message=str(e))
+
+
+sched = BackgroundScheduler(daemon=True)
+sched.add_job(sendGossip,'interval',seconds=3)
+sched.start()
+
+def merge(dict1, dict2):
+    #print("merging", dict1, dict2 )
+
+    for key in dict1:
+        #print(key)
+        if key in dict2:
+            #print(dict1[key], dict[key])
+            winner = compare(dict1[key], dict2[key])
+            #print("setting winner in dict1")
+            dict1[key] = winner
+        else:
+            #print("in else")
+            dict2[key] = dict1[key]
+    for key in dict2:
+        if key in dict1:
+            winner = compare(dict1[key], dict2[key])
+            dict2[key] = winner
+        else:
+            dict1[key] = dict2[key]
+    return dict1
+def compare(key1, key2):
+    clock1 = int(key1['clock'])
+    clock2 = int(key2['clock'])
+    #print("comparing  c1 c2", clock1, clock2)
+    if clock1 > clock2:
+        return key1
+    elif clock1 < clock2:
+        return key2
+    elif clock1 == clock2:
+        # tie break timestamps
+        if key1['timestamp'] > key2['timestamp']:
+            print("tie breaker", key1['timestamp'], key2['timestamp'])
+            return key1
+        else:
+            return key2
+
 
 
 
