@@ -220,7 +220,7 @@ def get_node_details():
 def get_all_replicas():
     # result = []
     num = min(this_server.number_of_replicas, len(this_server.view_node_list))
-    replicas = this_server.view_node_list[0:num]
+    replicas = this_server.view_node_list[0:num-1]
 
 
     json_resp = json.dumps({
@@ -443,7 +443,7 @@ def update_view():
         this_server.update_view(temp)
         this_server.remove_dups()
         json_resp = json.dumps({
-            "msg": "success",
+            "result": "success",
             "node_id": this_server.my_identity(),
             "number_of_nodes": len(this_server.view_node_list),
             "all servers": this_server.view_node_list,
