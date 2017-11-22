@@ -482,8 +482,12 @@ def gossip():
 
 def sendGossip():
     try:
-        r = requests.put("http://localhost:8081/gossip", data=json.dumps(KVSDict))
+        num = randint(0,len(this_server.view_node_list)-1)
+        ip = this_server.view_node_list[num]
+        r = requests.put('http://'+ip+'/gossip', data=json.dumps(KVSDict))
         print(r.text)
+        # r = requests.put("http://localhost:8081/gossip", data=json.dumps(KVSDict))
+        # print(r.text)
         # print("gossiping")
         return
     except Exception as e:
