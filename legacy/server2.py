@@ -24,13 +24,12 @@ global this_server
 global KVSDict
 KVSDict = dict()
 
-
 app = Flask(__name__)
 
 def sendGossip():
     try:
-        r = requests.put("http://localhost:8081/gossip", data=json.dumps(KVSDict))
-        print(r.text)
+        # print ("Gossiping: ", KVSDict)
+        # return requests.get('localhost:8080/gossip').content
         return
     except Exception as e:
         logging.error(e)
@@ -39,7 +38,7 @@ def sendGossip():
 
 sched = BackgroundScheduler(daemon=True)
 sched.add_job(sendGossip,'interval',seconds=3)
-# sched.start()
+sched.start()
 
 def merge(dict1, dict2):
     #print("merging", dict1, dict2 )
@@ -100,9 +99,9 @@ class Node(object):
         self.number_of_replicas = 1
         # list of all ip:port in the view ['ip1:port1', 'ip2:port2',... etc]
         self.view_node_list = ["1"]
-        self.my_ip_port = "127.0.0.1:8080"
+        self.my_ip_port = "127.0.0.1:8081"
         self.my_ip = "127.0.0.1"
-        self.my_port = "8080"
+        self.my_port = "8081"
         self.my_role = 'replica'  # to start
 
     def my_identity(self):
@@ -136,7 +135,7 @@ def ping():
 
 #  The ping route returns this server's IP and
 
-@app.route('/kv-store/ping', methods=['GET'])
+@app.route('/ping', methods=['GET'])
 def ping():
     json_resp = json.dumps({
         'result': 'success',
@@ -360,7 +359,6 @@ def update_view():
             "number_of_nodes": len(this_server.view_node_list),
             "all servers": this_server.view_node_list,
         })
-        print(this_server.view_node_list)
         return Response(
             json_resp,
             status=200,
@@ -420,8 +418,6 @@ def gossip():
         status=200,
         mimetype='application/json'
     )
-
-
 
 
 if __name__ == '__main__':
