@@ -97,6 +97,7 @@ class Node(object):
             self.my_port = self.my_ip_port.split(':')[1]
             self.view_node_list = os.getenv('VIEW').split(",")
             self.number_of_replicas =  len(self.view_node_list)
+            self.test_value = {}
 
         elif docker == 'load state from command line':
             # env_vars is sys.argv
@@ -495,11 +496,21 @@ def gossip():
     newDict = merge(KVSDict, DictA)
 
     json_resp = json.dumps({
-        "msg": "success",
-        "dict": KVSDict
+        "myIP": this_server.my_ip_port
     })
     return Response(
         json_resp,
+        status=200,
+        mimetype='application/json'
+    )
+    
+@app.route('/test', methods=['get'])
+def test():
+    json_resp = json.dumps({
+        "myIP": this_server.test_value
+    })
+    return Response(
+        this_server.test_value,
         status=200,
         mimetype='application/json'
     )
@@ -511,6 +522,9 @@ def sendGossip():
             num = randint(0,len(this_server.view_node_list)-1)
             ip = this_server.view_node_list[num]
             r = requests.put('http://'+ip+'/gossip', data=json.dumps(KVSDict))
+            this_server.test_value = json.loads(r)
+            print("GOSSIP RECEIVER IP ------>", json.loads(r.text)['myIP'])
+            
             # print(r.text)
             # r = requests.put("http://localhost:8081/gossip", data=json.dumps(KVSDict))
             # print(r.text)
@@ -523,7 +537,7 @@ def sendGossip():
 
 
 sched = BackgroundScheduler(daemon=True)
-sched.add_job(sendGossip,'interval',seconds=.1,id=this_server.my_ip_port)
+sched.add_job(sendGossip,'interval',seconds=1,id=this_server.my_ip_port)
 sched.start()
 
 def merge(dict1, dict2):
