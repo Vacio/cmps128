@@ -15,9 +15,6 @@ import os
 import json
 import ast
 import logging
-import requests
-
-
 from ast import literal_eval
 from time import sleep
 import re
@@ -26,18 +23,33 @@ from datetime import datetime
 global this_server
 from random import *
 global KVSDict
-import logging
-logging.basicConfig()
 KVSDict = dict()
-
 
 app = Flask(__name__)
 
-def sendGossip():
+
+def gossip():
     try:
-        r = requests.put("http://localhost:8081/gossip", data=json.dumps(KVSDict))
-        print(r.text)
-        # print("gossiping")
+        # print ("Gossiping: ", KVSDict)
+        # we want to send the dictionary over the network to another server
+        # the other server will compare the dictionary
+        #node = this_server.get_gossip_node()
+        #print("Gossip Target:  "+ node+ "\n")
+        # print("\n===============SENDING GOSSIP==============")
+        # print("\n\nsending request to http://" + node)
+        # r = requests.put('http://' + node + '/secondary_update',
+        #                  json={
+        #                      'val': 'test',
+        #                      'result': 'it made it',
+        #                      'type': 'add',
+        #                      'dict': json.dumps(KVSDict),
+        #                  },
+        #                  headers={'content-type': 'application/json'},
+        #                  timeout=1,
+        #                  )
+        # print(r + "\n")
+
+
         return
     except Exception as e:
         logging.error(e)
@@ -45,9 +57,10 @@ def sendGossip():
 
 
 sched = BackgroundScheduler(daemon=True)
-sched.add_job(sendGossip,'interval',seconds=3)
+sched.add_job(gossip,'interval',seconds=3)
 sched.start()
 
+# Dictionaries in the API
 def merge(dict1, dict2):
     #print("merging", dict1, dict2 )
 
@@ -68,6 +81,7 @@ def merge(dict1, dict2):
         else:
             dict1[key] = dict2[key]
     return dict1
+
 def compare(key1, key2):
     clock1 = int(key1['clock'])
     clock2 = int(key2['clock'])
@@ -112,7 +126,7 @@ def compare(key1, key2):
 
 #docker = 'loading from docker env variables
 #docker = 'loading statically defined server'
-docker = 'load state from command line'
+docker = 'loading from docker env variables'
 
 # Like this: $python server1.py 3 "localhost:5000, localhost:5001, localhost:5002" "localhost:5000"
 #  where 3 is the number of nodes and the string is the VIEW variable
@@ -451,7 +465,6 @@ def update_view():
             "number_of_nodes": len(this_server.view_node_list),
             "all servers": this_server.view_node_list,
         })
-        print(this_server.view_node_list)
         return Response(
             json_resp,
             status=200,
@@ -501,34 +514,82 @@ def server_name():
 
 
 
-
-
-'''
-When someone does a put on the gossip route, the payload is an incoming dictionary
-The incoming dictionary is merged with the current dictionary and the result is
-returned to the caller
-'''
 @app.route('/gossip', methods=['PUT'])
 def gossip():
-    DictA = json.loads(request.data)
-    newDict = dict()
+    global KVSDict
+    #print("\n\n+++++++ RECIEVING GOSSIP++++++++ \n\n")
+    #DictA = ast.literal_eval(request.form['dict'])
+    inc_dict = json.loads(request.json['dict'])
+    #print(json.dumps(json.loads(request.json['dict'])))
+    DictA = ast.literal_eval(json.dumps(json.loads(request.json['dict'])))
+    #print("----->",DictA,"\n")
+    #Removes all unicode!!@#!@#%!%#%%#$%FINALLY
+    KVSDict = ast.literal_eval(json.dumps(KVSDict,ensure_ascii=True))
+    #print("clean KVSDICT: ", KVSDict,type(KVSDict))
+    #print("Merging Dictionaries:")
     newDict = merge(KVSDict, DictA)
-
+    KVSDict = newDict
+    #print(KVSDict)
     json_resp = json.dumps({
-        "msg": "success",
-        "dict": KVSDict
+
+        "kvsdict": json.dumps(KVSDict),
     })
     return Response(
         json_resp,
         status=200,
         mimetype='application/json'
     )
+@app.route('/test_gossip', methods=['GET'])
+def test_gossip():
+    #send a test gossip to another servers gossip route
+    global KVSDict
+    #TODO Paramaterize node with nodelist
+    print(this_server.view_node_list)
+    for node_ip in this_server.view_node_list:
+        if node_ip != this_server.my_ip:
+            try:
+                sleep(.01)
+                print("start\n\n "+  node_ip + "\n\n end")
+                #r = requests.put('http://'+node+'/gossip',
+                r = requests.put('http://' + node_ip + '/gossip',
+                                 json={
+                                     'val': 'test',
+                                     'dict': json.dumps(KVSDict),
+                                 },
+                                 headers={'content-type': 'application/json'},
+                                 timeout=2,
+                                 )
 
-
-
+                print("+++++++++++ +++++++++")
+                ret_dict = ast.literal_eval(json.loads(r.content)['kvsdict'])
+                print(ret_dict,type(ret_dict)) #the new KVSDict
+                KVSDict = ret_dict
+                json_resp = json.dumps({
+                    'dict': 'placeholder',
+                })
+                return Response(
+                    json_resp,
+                    status=200,
+                    mimetype='application/json',
+                )
+            except:
+                print("Gossip from: "+this_server.my_ip_port+" failed to NODE: ",node_ip)
+                pass
+        else:
+            continue
+@app.route('/print_kvs', methods=['GET'])
+def print_kvs():
+    json_resp = json.dumps({
+        'dict':KVSDict,
+    })
+    return Response(
+        json_resp,
+        status=200,
+        mimetype='application/json',
+    )
 
 if __name__ == '__main__':
     print(this_server.my_port)
-    server = WSGIServer((this_server.my_ip,int(this_server.my_port)), app)
+    server = WSGIServer(("0.0.0.0",int(this_server.my_port)), app)
     server.serve_forever()
-    #app.run(host=this_server.my_ip, port=this_server.my_port, threaded=True)
+    #app.run(host=this_server.my_ip, port=this_server.my_port)

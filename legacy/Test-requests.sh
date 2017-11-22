@@ -11,7 +11,7 @@ PORT=8081
 curl -X PUT localhost:$PORT/kv-store/foo -d val=bart
 echo "\n"
 
-curl -X GET localhost:$PORT/kv-store/foo
+curl -X GET localhost:$PORT/kv-store/foo -d
 echo "\n"
 
 curl -X PUT localhost:$PORT/kv-store/foo -d val=bert
