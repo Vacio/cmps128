@@ -418,7 +418,7 @@ def put_in_kvs(key):
 @app.route('/kv-store/update_view', methods=['PUT'])
 def update_view():
     #print(request.form)
-    if request.form['type'] == 'add':
+    if request.args['type'] == 'add':
         # update the view list with a new server identity
         this_server.view_node_list.append(str(request.form['ip_port']))
         print('appended'+request.form['ip_port'])
@@ -436,7 +436,7 @@ def update_view():
             status=200,
             mimetype='application/json'
         )
-    elif request.form['type'] == 'remove':
+    elif request.args['type'] == 'remove':
         temp = [ip for ip in this_server.view_node_list]
         this_server.view_node_list.remove(request.form['ip_port'])
         print(this_server.my_ip_port + ': REMOVED'+request.form['ip_port'])
