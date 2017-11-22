@@ -101,7 +101,7 @@ class Node(object):
         elif docker == 'load state from command line':
             # env_vars is sys.argv
             print(env_vars)
-            self.number_of_replicas = env_vars[1]
+            self.number_of_replicas = int(env_vars[1])
             # list of all ip:port in the view ['ip1:port1', 'ip2:port2',... etc]
             self.view_node_list = env_vars[2].split(',')
             self.my_ip_port = env_vars[3]
@@ -209,6 +209,23 @@ def get_node_details():
     json_resp = json.dumps({
         'result': 'success',
         "replica": result,
+    })
+    return Response(
+        json_resp,
+        status=403,
+        mimetype='application/json'
+    )
+
+@app.route('/kv-store/get_all_replicas', methods=['GET'])
+def get_all_replicas():
+    # result = []
+    num = min(this_server.number_of_replicas, len(this_server.view_node_list))
+    replicas = this_server.view_node_list[0:num]
+
+
+    json_resp = json.dumps({
+        'result': 'success',
+        'replicas': replicas
     })
     return Response(
         json_resp,
