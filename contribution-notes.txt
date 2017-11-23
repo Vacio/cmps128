@@ -1,4 +1,4 @@
-cralgonz: Created boilerplate/codebase for the team to work off of
-smdalton: Created architecture for request forwarding, responsible for fowarding "drone" class
-tanees: Contributed in helping create the architecture/behavior of the request forwarding
-jfking: Contributed to troubleshooting Docker and diagnosing big problems early on such as realizing we needed a listener for HTTP requests in the case that a given Docker instance was a forwarding instance
+cralgonz: Created base for server in part 2 that part 3 was based on, Docker expert, general maintenance, and test passing
+smdalton: Refactered server into one file, general maintenance, broadcast for update view
+tanees: General maintenance and test passing
+jfking: Designed and implemented gossip and kvstore meta data, modified server to pass tests, and general maintenance
