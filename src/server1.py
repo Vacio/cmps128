@@ -428,7 +428,7 @@ def update_view():
         json_resp = json.dumps({
             "msg": "success",
             "node_id": this_server.my_identity(),
-            "number_of_nodes": len(this_server.view_node_list),
+            "number_of_nodes": len(this_server.live_servers),
             "all servers": this_server.view_node_list,
         })
         print(this_server.view_node_list)
@@ -440,13 +440,15 @@ def update_view():
     elif request.args['type'] == 'remove':
         temp = [ip for ip in this_server.view_node_list]
         this_server.view_node_list.remove(request.form['ip_port'])
+        this_server.live_servers.remove(request.form['ip_port'])
+        this_server.view_node_list.remove("")
         print(this_server.my_ip_port + ': REMOVED'+request.form['ip_port'])
         this_server.update_view(temp)
         this_server.remove_dups()
         json_resp = json.dumps({
             "result": "success",
             "node_id": this_server.my_identity(),
-            "number_of_nodes": len(this_server.view_node_list),
+            "number_of_nodes": len(this_server.live_servers),
             "all servers": this_server.view_node_list,
         })
         return Response(
@@ -495,11 +497,8 @@ def gossip():
     newDict = dict()
     newDict = merge(KVSDict, DictA)
 
-    json_resp = json.dumps({
-        "myIP": this_server.my_ip_port
-    })
     return Response(
-        json_resp,
+        this_server.my_ip_port,
         status=200,
         mimetype='application/json'
     )
@@ -507,10 +506,10 @@ def gossip():
 @app.route('/test', methods=['get'])
 def test():
     json_resp = json.dumps({
-        "myIP": this_server.test_value
+        "testIP": this_server.test_value
     })
     return Response(
-        this_server.test_value,
+        json_resp,
         status=200,
         mimetype='application/json'
     )
@@ -521,15 +520,30 @@ def sendGossip():
             print("Type of view node list ----->", type(this_server.view_node_list))
             num = randint(0,len(this_server.view_node_list)-1)
             ip = this_server.view_node_list[num]
-            r = requests.put('http://'+ip+'/gossip', data=json.dumps(KVSDict))
-            this_server.test_value = json.loads(r)
-            print("GOSSIP RECEIVER IP ------>", json.loads(r.text)['myIP'])
+            try:
+                r = requests.put('http://'+ip+'/gossip', data=json.dumps(KVSDict))
+                if r.status_code == 200:
+                    if r.text not in this_server.live_servers:
+                        this_server.live_servers.append(r.text)
+                        this_server.live_servers.sort()
+                    this_server.test_value = this_server.live_servers
+                    return
+                else:
+                    this_server.live_servers.remove(ip)
+                    this_server.live_servers.remove("")   
+                    this_server.test_value = this_server.live_servers
+                    pass
+            except: 
+                    this_server.live_servers.remove(ip)   
+                    this_server.test_value = this_server.live_servers
+                    pass
+            # print("GOSSIP RECEIVER IP ------>", json.loads(r.text)['myIP'])
             
             # print(r.text)
             # r = requests.put("http://localhost:8081/gossip", data=json.dumps(KVSDict))
             # print(r.text)
             # print("gossiping")
-            return
+
         else:
             return
     except:
@@ -537,7 +551,7 @@ def sendGossip():
 
 
 sched = BackgroundScheduler(daemon=True)
-sched.add_job(sendGossip,'interval',seconds=1,id=this_server.my_ip_port)
+sched.add_job(sendGossip,'interval',seconds=.01,id=this_server.my_ip_port)
 sched.start()
 
 def merge(dict1, dict2):
