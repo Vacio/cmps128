@@ -60,9 +60,9 @@ app = Flask(__name__)
         logging.debug("List of all IP:PORT values in the VIEW: " + str(viewList))
 """
 
-docker = 'loading from docker env variables'
+#docker = 'loading from docker env variables'
 #docker = 'loading statically defined server'
-# docker = 'load state from command line'
+docker = 'load state from command line'
 
 # Like this: $python server1.py 3 "localhost:5000, localhost:5001, localhost:5002" "localhost:5000"
 #  where 3 is the number of nodes and the string is the VIEW variable
@@ -102,6 +102,7 @@ class Node(object):
         elif docker == 'load state from command line':
             # env_vars is sys.argv
             print(env_vars)
+            # "k [view1,view2,view3] myip"
             self.number_of_replicas = int(env_vars[1])
             # list of all ip:port in the view ['ip1:port1', 'ip2:port2',... etc]
             self.view_node_list = env_vars[2].split(',')
@@ -159,7 +160,7 @@ class Node(object):
 
 
 # state object for this node
-this_server = Node('a')
+this_server = Node(sys.argv)
 
 
 # for recieving updates from a node that recieved the initial update
@@ -551,7 +552,7 @@ def sendGossip():
 
 
 sched = BackgroundScheduler(daemon=True)
-sched.add_job(sendGossip,'interval',seconds=.01,id=this_server.my_ip_port)
+sched.add_job(sendGossip,'interval',seconds=2,id=this_server.my_ip_port)
 sched.start()
 
 def merge(dict1, dict2):
