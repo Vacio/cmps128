@@ -5,6 +5,7 @@
 
 import sys
 import requests
+from apscheduler.schedulers import gevent
 from flask import Flask
 from flask import abort
 from flask import request
@@ -68,7 +69,7 @@ docker = 'load state from command line'
 #  where 3 is the number of nodes and the string is the VIEW variable
 
 class Node(object):
-    number_of_replicas = 0
+    nodes_per_cluster = 0
     view_node_list = []
     my_ip = ''
     my_port = ''
@@ -79,40 +80,58 @@ class Node(object):
     view_clock = 0
     absent_servers = []
     k = 3
-    def __init__(self, env_vars):
+    # a list of all members of each cluster
+    cluster_list = []
 
+    def __init__(self, env_vars):
         if docker == 'loading statically defined server':
             print(env_vars)
-            self.number_of_replicas = 1
+            self.nodes_per_cluster = 1
             self.view_node_list = ["1"]
             self.my_ip_port = "127.0.0.1:8080"
             self.my_ip = "127.0.0.1"
             self.my_port = "8080"
             self.my_role = 'replica'  # to start
-
+            self.init_clusters(self, self.nodes_per_cluster)
         if docker == 'loading from docker env variables':
             self.view_node_list = os.getenv('VIEW').split(",")
             self.my_ip_port = os.getenv('IPPORT')
             self.my_ip = self.my_ip_port.split(":")[0]
             self.my_port = self.my_ip_port.split(':')[1]
             self.view_node_list = os.getenv('VIEW').split(",")
-            self.number_of_replicas =  len(self.view_node_list)
+            self.nodes_per_cluster =  len(self.view_node_list)
             self.test_value = {}
-
+            self.init_clusters(self, self.nodes_per_cluster)
         elif docker == 'load state from command line':
             # env_vars is sys.argv
             print(env_vars)
             # "k [view1,view2,view3] myip"
-            self.number_of_replicas = int(env_vars[1])
+            self.nodes_per_cluster = int(env_vars[1])
             # list of all ip:port in the view ['ip1:port1', 'ip2:port2',... etc]
             self.view_node_list = env_vars[2].split(',')
             self.my_ip_port = env_vars[3]
             self.my_ip = env_vars[3].split(':')[0]
             self.my_port = env_vars[3].split(':')[1]
             self.my_role = 'replica'  # to start
+            self.init_clusters()
+            #self.determine_role()
 
     def my_identity(self):
         return self.my_ip_port
+
+    def init_clusters(self):
+        view = self.view_node_list
+        k = self.nodes_per_cluster
+        for i in range(0, len(view), k):
+            a = view[i:(i+k)]
+            #print(a)
+            self.cluster_list.append(a)
+        print(self.cluster_list)
+
+    # def determine_role(self):
+    #     # find me and then if the list I am in is less than length of replicas
+    #     for i in range(0,len(self.cluster_list)):
+    #         if len(self.cluster_list[i])!= self.nodes_per_cluster:
 
 
     def update_view(self, node_list):
@@ -138,12 +157,12 @@ class Node(object):
                                     headers={'content-type':'application/json'},
                                     timeout=1,
                                     )
+                    print("server at ip: " + node + "  is status"+ str(r.status_code))
 
-                    print(r)
-                    print("server at ip: " + node + "is status"+ str(r.status_code))
-
+                    if r.status_code != 200:
+                        print("server at address: "+node+"is unreachable")
                 except:
-
+                    print("Error when sending to" + node +", possibly unreachable! \n\n")
                     self.absent_servers.append(node)
                     pass
             else:
@@ -227,7 +246,7 @@ def get_node_details():
 @app.route('/kv-store/get_all_replicas', methods=['GET'])
 def get_all_replicas():
     # result = []
-    num = min(this_server.number_of_replicas, len(this_server.view_node_list))
+    num = min(this_server.nodes_per_cluster, len(this_server.view_node_list))
     replicas = this_server.view_node_list[0:num-1]
 
 
@@ -533,10 +552,10 @@ def sendGossip():
     except:
         pass
 
-
-sched = BackgroundScheduler(daemon=True)
-sched.add_job(sendGossip,'interval',seconds=17,id=this_server.my_ip_port)
-sched.start()
+#
+# sched = BackgroundScheduler(daemon=True)
+# sched.add_job(sendGossip,'interval',seconds=17,id=this_server.my_ip_port)
+# sched.start()
 
 def merge(dict1, dict2):
     #print("merging", dict1, dict2 )
