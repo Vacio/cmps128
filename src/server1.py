@@ -3,7 +3,7 @@
     Created for UCSC undergrad course CMPS 128, Fall 2017
 """
 
-import sys
+import sys; sys.path.append('../functionDev')
 import requests
 from apscheduler.schedulers import gevent
 from flask import Flask
@@ -28,6 +28,9 @@ global this_server
 from random import *
 global KVSDict
 import logging
+
+from assignKeyRanges import assignKeyRanges
+
 logging.basicConfig()
 KVSDict = dict()
 
@@ -93,6 +96,7 @@ class Node(object):
             self.my_port = "8080"
             self.my_role = 'replica'  # to start
             self.init_clusters(self, self.nodes_per_cluster)
+            self.keyRanges = []
         if docker == 'loading from docker env variables':
             self.view_node_list = os.getenv('VIEW').split(",")
             self.my_ip_port = os.getenv('IPPORT')
@@ -102,11 +106,13 @@ class Node(object):
             self.nodes_per_cluster =  len(self.view_node_list)
             self.test_value = {}
             self.init_clusters(self, self.nodes_per_cluster)
+            self.keyRanges = []
         elif docker == 'load state from command line':
             # env_vars is sys.argv
             print(env_vars)
             # "k [view1,view2,view3] myip"
             self.nodes_per_cluster = int(env_vars[1])
+            # self.nodes_per_cluster = 3
             # list of all ip:port in the view ['ip1:port1', 'ip2:port2',... etc]
             self.view_node_list = env_vars[2].split(',')
             self.my_ip_port = env_vars[3]
@@ -114,6 +120,7 @@ class Node(object):
             self.my_port = env_vars[3].split(':')[1]
             self.my_role = 'replica'  # to start
             self.init_clusters()
+            self.keyRanges = []
             #self.determine_role()
 
     def my_identity(self):
@@ -126,7 +133,9 @@ class Node(object):
             a = view[i:(i+k)]
             #print(a)
             self.cluster_list.append(a)
-        print(self.cluster_list)
+            self.keyRanges = assignKeyRanges(self.cluster_list, self.nodes_per_cluster)
+        print("Clusters: ", self.cluster_list)
+        print("Key Ranges: ", self.keyRanges)
 
     # def determine_role(self):
     #     # find me and then if the list I am in is less than length of replicas
@@ -505,7 +514,7 @@ def gossip():
         status=200,
         mimetype='application/json'
     )
-    
+
 @app.route('/test', methods=['get'])
 def test():
     json_resp = json.dumps({
@@ -533,15 +542,15 @@ def sendGossip():
                     return
                 else:
                     this_server.live_servers.remove(ip)
-                    this_server.live_servers.remove("")   
+                    this_server.live_servers.remove("")
                     this_server.test_value = this_server.live_servers
                     pass
-            except: 
-                    this_server.live_servers.remove(ip)   
+            except:
+                    this_server.live_servers.remove(ip)
                     this_server.test_value = this_server.live_servers
                     pass
             # print("GOSSIP RECEIVER IP ------>", json.loads(r.text)['myIP'])
-            
+
             # print(r.text)
             # r = requests.put("http://localhost:8081/gossip", data=json.dumps(KVSDict))
             # print(r.text)
