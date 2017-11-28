@@ -30,6 +30,7 @@ global KVSDict
 import logging
 
 from assignKeyRanges import assignKeyRanges
+from assignMyKeyRange import assignMyKeyRange
 
 logging.basicConfig()
 KVSDict = dict()
@@ -96,7 +97,8 @@ class Node(object):
             self.my_port = "8080"
             self.my_role = 'replica'  # to start
             self.init_clusters(self, self.nodes_per_cluster)
-            self.keyRanges = []
+            self.my_key_ranges = []
+            self.my_key_range = []
         if docker == 'loading from docker env variables':
             self.view_node_list = os.getenv('VIEW').split(",")
             self.my_ip_port = os.getenv('IPPORT')
@@ -107,13 +109,13 @@ class Node(object):
             self.test_value = {}
             # Todo
             self.init_clusters(self, self.nodes_per_cluster)
-            self.keyRanges = []
+            self.my_key_ranges = []
+            self.my_key_range = []
         elif docker == 'load state from command line':
             # env_vars is sys.argv
             print(env_vars)
             # "k [view1,view2,view3] myip"
             self.nodes_per_cluster = int(env_vars[1])
-            # self.nodes_per_cluster = 3
             # list of all ip:port in the view ['ip1:port1', 'ip2:port2',... etc]
             self.view_node_list = env_vars[2].split(',')
             self.my_ip_port = env_vars[3]
@@ -121,7 +123,8 @@ class Node(object):
             self.my_port = env_vars[3].split(':')[1]
             self.my_role = 'replica'  # to start
             self.init_clusters()
-            self.keyRanges = []
+            self.my_key_ranges = []
+            self.my_key_range = []
             #self.determine_role()
 
     def my_identity(self):
@@ -134,10 +137,13 @@ class Node(object):
             a = view[i:(i+k)]
             #print(a)
             self.cluster_list.append(a)
+            self.my_key_ranges = assignKeyRanges(self.cluster_list, self.nodes_per_cluster)
+            self.my_key_range = assignMyKeyRange(self.my_ip_port, self.cluster_list, self.my_key_ranges)
 
-            self.keyRanges = assignKeyRanges(self.cluster_list, self.nodes_per_cluster)
+
         print("Clusters: ", self.cluster_list)
-        print("Key Ranges: ", self.keyRanges)
+        print("Key Ranges: ", self.my_key_ranges)
+        print("My key range: ", self.my_key_range)
 
 
     # def determine_role(self):
