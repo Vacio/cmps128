@@ -99,8 +99,9 @@ class Node(object):
             self.my_ip = self.my_ip_port.split(":")[0]
             self.my_port = self.my_ip_port.split(':')[1]
             self.view_node_list = os.getenv('VIEW').split(",")
-            self.nodes_per_cluster =  len(self.view_node_list)
+            self.nodes_per_cluster = int(os.getenv('K'))  #len(self.view_node_list)
             self.test_value = {}
+            # Todo
             self.init_clusters(self, self.nodes_per_cluster)
         elif docker == 'load state from command line':
             # env_vars is sys.argv
@@ -127,6 +128,7 @@ class Node(object):
             #print(a)
             self.cluster_list.append(a)
         print(self.cluster_list)
+        # sleep(10)
 
     # def determine_role(self):
     #     # find me and then if the list I am in is less than length of replicas
@@ -207,6 +209,7 @@ def secondary_update():
         "number_of_nodes": len(this_server.view_node_list),
         "all servers": this_server.view_node_list
     })
+
     return Response(
         json_resp,
         status=200,
@@ -518,44 +521,53 @@ def test():
     )
 
 def sendGossip():
-    try:
-        if(len(this_server.view_node_list) > 1):
-            print("Type of view node list ----->", type(this_server.view_node_list))
-            num = randint(0,len(this_server.view_node_list)-1)
-            ip = this_server.view_node_list[num]
-            try:
-                r = requests.put('http://'+ip+'/gossip', data=json.dumps(KVSDict))
-                if r.status_code == 200:
-                    if r.text not in this_server.live_servers:
-                        this_server.live_servers.append(r.text)
-                        this_server.live_servers.sort()
-                    this_server.test_value = this_server.live_servers
-                    return
-                else:
-                    this_server.live_servers.remove(ip)
-                    this_server.live_servers.remove("")   
-                    this_server.test_value = this_server.live_servers
-                    pass
-            except: 
-                    this_server.live_servers.remove(ip)   
-                    this_server.test_value = this_server.live_servers
-                    pass
+
+    if(len(this_server.view_node_list) > 1):
+        print("Type of view node list ----->", type(this_server.view_node_list))
+        my_cluster =''
+
+        # TODO handle the proxy case i.e. no gossip if proxy
+
+        try:
+            for cluster in this_server.cluster_list:
+                if this_server.my_ip_port in cluster:
+                    my_cluster = cluster
+                    num = randint(0, len(cluster)-1)
+                    print( "I am in cluster")
+            print("My Cluster:  " +  str(my_cluster))
+            ip = my_cluster[num]
+            print("Gossiping to:"+ ip)
+
+            r = requests.put('http://'+ip+'/gossip', data=json.dumps(KVSDict))
+            if r.status_code == 200:
+                if r.text not in this_server.live_servers:
+                    # TODO fix this for live cluster and live servers in cluster/overall
+                    this_server.live_servers.append(r.text)
+                    this_server.live_servers.sort()
+                this_server.test_value = this_server.live_servers
+                return
+            else:
+                this_server.live_servers.remove(ip)
+                this_server.live_servers.remove("")
+                this_server.test_value = this_server.live_servers
+                pass
+        except requests.ConnectionError as e:
+            print("connection error to " +ip)
             # print("GOSSIP RECEIVER IP ------>", json.loads(r.text)['myIP'])
-            
+
             # print(r.text)
             # r = requests.put("http://localhost:8081/gossip", data=json.dumps(KVSDict))
             # print(r.text)
             # print("gossiping")
 
-        else:
-            return
-    except:
-        pass
+    else:
+        return
 
-#
-# sched = BackgroundScheduler(daemon=True)
-# sched.add_job(sendGossip,'interval',seconds=17,id=this_server.my_ip_port)
-# sched.start()
+
+sched = BackgroundScheduler(daemon=True)
+sched.add_job(sendGossip,'interval',seconds=3,id=this_server.my_ip_port)
+sched.start()
+
 
 def merge(dict1, dict2):
     #print("merging", dict1, dict2 )
@@ -577,6 +589,7 @@ def merge(dict1, dict2):
         else:
             dict1[key] = dict2[key]
     return dict1
+
 def compare(key1, key2):
     clock1 = int(key1['clock'])
     clock2 = int(key2['clock'])
