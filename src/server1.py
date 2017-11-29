@@ -539,17 +539,20 @@ def test():
 def sendGossip():
 
     if(len(this_server.view_node_list) > 1):
-        print("Type of view node list ----->", type(this_server.view_node_list))
         my_cluster =''
 
         # TODO handle the proxy case i.e. no gossip if proxy
 
         try:
+            num = 0
+            my_cluster = []
             for cluster in this_server.cluster_list:
                 if this_server.my_ip_port in cluster:
                     my_cluster = cluster
                     num = randint(0, len(cluster)-1)
-                    print( "I am in cluster")
+                    print( "I am in cluster: ", my_cluster)
+                else:
+                    continue
             print("My Cluster:  " +  str(my_cluster))
             ip = my_cluster[num]
             print("Gossiping to:"+ ip)
