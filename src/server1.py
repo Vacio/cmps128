@@ -27,6 +27,7 @@ from datetime import datetime
 global this_server
 from random import *
 global KVSDict
+global myKeys
 import logging
 
 from assignKeyRanges import assignKeyRanges
@@ -34,6 +35,7 @@ from assignMyKeyRange import assignMyKeyRange
 
 logging.basicConfig()
 KVSDict = dict()
+myKeys = []
 
 
 app = Flask(__name__)
@@ -97,9 +99,6 @@ class Node(object):
             self.my_port = "8080"
             self.my_role = 'replica'  # to start
             self.init_clusters(self, self.nodes_per_cluster)
-            self.my_key_ranges = []
-            self.my_keys = []
-            self.my_cluster = []
         if docker == 'loading from docker env variables':
             self.view_node_list = os.getenv('VIEW').split(",")
             self.my_ip_port = os.getenv('IPPORT')
@@ -110,9 +109,6 @@ class Node(object):
             self.test_value = {}
             # Todo
             self.init_clusters(self, self.nodes_per_cluster)
-            self.my_key_ranges = []
-            self.my_keys = []
-            self.my_cluster = []
         elif docker == 'load state from command line':
             # env_vars is sys.argv
             print(env_vars)
@@ -124,10 +120,8 @@ class Node(object):
             self.my_ip = env_vars[3].split(':')[0]
             self.my_port = env_vars[3].split(':')[1]
             self.my_role = 'replica'  # to start
+            # edited by joe, might cause a problem
             self.init_clusters()
-            self.my_key_ranges = []
-            self.my_keys = []
-            self.my_cluster = []
             #self.determine_role()
 
     def my_identity(self):
@@ -142,7 +136,6 @@ class Node(object):
             self.cluster_list.append(a)
             self.my_key_ranges = assignKeyRanges(self.cluster_list, self.nodes_per_cluster)
             self.my_keys = assignMyKeyRange(self.my_ip_port, self.cluster_list, self.my_key_ranges)
-
 
         print("Clusters: ", self.cluster_list)
         print("Key Ranges: ", self.my_key_ranges)
@@ -400,7 +393,8 @@ def put_in_kvs(key):
                     'replaced': 'False',
                     'msg': 'New key created',
                     'causal_payload': '0',
-                    'result': 'success'
+                    'result': 'success',
+                    'myKeys': this_server.my_keys
                 }
             )
             # logging.debug("Value in dict: " + KVSDict[key])
