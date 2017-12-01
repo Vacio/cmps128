@@ -98,7 +98,7 @@ class Node(object):
             self.my_role = 'replica'  # to start
             self.init_clusters(self, self.nodes_per_cluster)
             self.my_key_ranges = []
-            self.my_key_range = []
+            self.my_keys = []
         if docker == 'loading from docker env variables':
             self.view_node_list = os.getenv('VIEW').split(",")
             self.my_ip_port = os.getenv('IPPORT')
@@ -110,7 +110,7 @@ class Node(object):
             # Todo
             self.init_clusters(self, self.nodes_per_cluster)
             self.my_key_ranges = []
-            self.my_key_range = []
+            self.my_keys = []
         elif docker == 'load state from command line':
             # env_vars is sys.argv
             print(env_vars)
@@ -124,7 +124,7 @@ class Node(object):
             self.my_role = 'replica'  # to start
             self.init_clusters()
             self.my_key_ranges = []
-            self.my_key_range = []
+            self.my_keys = []
             #self.determine_role()
 
     def my_identity(self):
@@ -138,12 +138,12 @@ class Node(object):
             #print(a)
             self.cluster_list.append(a)
             self.my_key_ranges = assignKeyRanges(self.cluster_list, self.nodes_per_cluster)
-            self.my_key_range = assignMyKeyRange(self.my_ip_port, self.cluster_list, self.my_key_ranges)
+            self.my_keys = assignMyKeyRange(self.my_ip_port, self.cluster_list, self.my_key_ranges)
 
 
         print("Clusters: ", self.cluster_list)
         print("Key Ranges: ", self.my_key_ranges)
-        print("My key range: ", self.my_key_range)
+        print("My key range: ", self.my_keys)
 
 
     # def determine_role(self):
