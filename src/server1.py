@@ -99,6 +99,7 @@ class Node(object):
             self.init_clusters(self, self.nodes_per_cluster)
             self.my_key_ranges = []
             self.my_keys = []
+            self.my_cluster = []
         if docker == 'loading from docker env variables':
             self.view_node_list = os.getenv('VIEW').split(",")
             self.my_ip_port = os.getenv('IPPORT')
@@ -111,6 +112,7 @@ class Node(object):
             self.init_clusters(self, self.nodes_per_cluster)
             self.my_key_ranges = []
             self.my_keys = []
+            self.my_cluster = []
         elif docker == 'load state from command line':
             # env_vars is sys.argv
             print(env_vars)
@@ -125,6 +127,7 @@ class Node(object):
             self.init_clusters()
             self.my_key_ranges = []
             self.my_keys = []
+            self.my_cluster = []
             #self.determine_role()
 
     def my_identity(self):
@@ -521,7 +524,7 @@ def gossip():
 
     return Response(
         this_server.my_ip_port,
-        status=200,
+        status=205,
         mimetype='application/json'
     )
 
@@ -554,11 +557,13 @@ def sendGossip():
                 else:
                     continue
             print("My Cluster:  " +  str(my_cluster))
+            this_server.my_cluster = my_cluster
             ip = my_cluster[num]
             print("Gossiping to:"+ ip)
 
             r = requests.put('http://'+ip+'/gossip', data=json.dumps(KVSDict))
-            if r.status_code == 200:
+            if r.status_code == 205:
+                print("\nGossip SUCCEEDED: ", this_server.my_ip_port)
                 if r.text not in this_server.live_servers:
                     # TODO fix this for live cluster and live servers in cluster/overall
                     this_server.live_servers.append(r.text)
@@ -566,12 +571,17 @@ def sendGossip():
                 this_server.test_value = this_server.live_servers
                 return
             else:
+                print("\nGossip Failed\n")
                 this_server.live_servers.remove(ip)
                 this_server.live_servers.remove("")
                 this_server.test_value = this_server.live_servers
                 pass
         except requests.ConnectionError as e:
             print("connection error to " +ip)
+            if ip in this_server.live_servers:
+                this_server.live_servers.remove(ip)
+                this_server.live_servers.remove("")
+                this_server.test_value = this_server.live_servers
 
             # print("GOSSIP RECEIVER IP ------>", json.loads(r.text)['myIP'])
 
@@ -583,9 +593,19 @@ def sendGossip():
     else:
         return
 
+def checkCluster():
+    if (len(this_server.live_servers) == 1):
+        for i in  range(0, len(this_server.my_cluster)):
+            if this_server.my_cluster[i] in this_server.view_node_list:
+                this_server.view_node_list.remove(this_server.my_cluster[i])
+        print("\nI think my cluster is dying\n")
+    else:
+        print("\nMy cluster is fine\n")
+
 
 sched = BackgroundScheduler(daemon=True)
-sched.add_job(sendGossip,'interval',seconds=3,id=this_server.my_ip_port)
+sched.add_job(sendGossip,'interval',seconds=.5,id=this_server.my_ip_port)
+sched.add_job(checkCluster,'interval',seconds=5)
 sched.start()
 
 
