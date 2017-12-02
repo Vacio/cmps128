@@ -215,7 +215,7 @@ def secondary_update():
     this_server.view_node_list = new_view
     this_server.remove_dups()
     this_server.init_clusters()
-    print("server @" + this_server.my_ip_port+ " NEW VIEW IS: \n"+str(this_server.view_node_list))
+    print("server @" + this_server.my_ip_port + " NEW VIEW IS: \n"+str(this_server.view_node_list))
     json_resp = json.dumps({
         "msg": "success",
         "node_id": this_server.my_identity(),
