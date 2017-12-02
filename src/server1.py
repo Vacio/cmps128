@@ -593,6 +593,8 @@ def checkCluster():
             if this_server.my_cluster[i] in this_server.view_node_list:
                 this_server.view_node_list.remove(this_server.my_cluster[i])
         print("\nI think my cluster is dying\n")
+        this_server.update_view(this_server.view_node_list)
+        this_server.init_clusters()
     else:
         print("\nMy cluster is fine\n")
 
