@@ -212,9 +212,12 @@ def secondary_update():
     # if this_server.my_ip_port not in new_view:
     #     this_server.view_node_list = []
     #
+    # Set the local view to the incoming view, as it is the master view
     this_server.view_node_list = new_view
     this_server.remove_dups()
+    # re-init the clusters on a view change to re-assign the keys on partitions
     this_server.init_clusters()
+
     print("server @" + this_server.my_ip_port + " NEW VIEW IS: \n"+str(this_server.view_node_list))
     json_resp = json.dumps({
         "msg": "success",
