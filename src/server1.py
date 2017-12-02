@@ -130,6 +130,8 @@ class Node(object):
     def init_clusters(self):
         view = self.view_node_list
         k = self.nodes_per_cluster
+        self.cluster_list = []
+        # initialize it to empty to prevent duplication
         for i in range(0, len(view), k):
             a = view[i:(i+k)]
             #print(a)
@@ -186,6 +188,9 @@ class Node(object):
         for node in self.view_node_list:
             if self.view_node_list.count(node) > 1:
                 self.view_node_list.remove(node)
+        for node in self.cluster_list:
+            if self.cluster_list.count(node)>1:
+                self.cluster_list.remove(node)
         pass
 
     def get_gossip_node(self):
@@ -217,6 +222,8 @@ def secondary_update():
     this_server.remove_dups()
     # re-init the clusters on a view change to re-assign the keys on partitions
     this_server.init_clusters()
+    print("===========NEW CLUSTER ARRANGEMENT==================")
+    print(this_server.cluster_list)
 
     print("server @" + this_server.my_ip_port + " NEW VIEW IS: \n"+str(this_server.view_node_list))
     json_resp = json.dumps({
@@ -566,6 +573,7 @@ def sendGossip():
                     # TODO fix this for live cluster and live servers in cluster/overall
                     this_server.live_servers.append(r.text)
                     this_server.live_servers.sort()
+                    this_server.remove_dups()
                 this_server.test_value = this_server.live_servers
                 return
             else:
